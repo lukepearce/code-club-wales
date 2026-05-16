@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Phase 0 · Question Cards — Code Club Wales</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #1c2151;
+    --ink-2: #2f3c7e;
+    --coral: #f96167;
+    --coral-deep: #c5453d;
+    --gold: #f9e795;
+    --gold-deep: #b08800;
+    --sage: #5a7d65;
+    --sage-deep: #3f5a48;
+    --paper: #faf7f0;
+    --paper-2: #f0ece1;
+    --line: rgba(28, 33, 81, 0.12);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Manrope", system-ui, sans-serif;
+    background: var(--paper); color: var(--ink); line-height: 1.55;
+    background-image:
+      radial-gradient(circle at 88% 5%, rgba(249, 97, 103, 0.07), transparent 38%),
+      radial-gradient(circle at 12% 90%, rgba(47, 60, 126, 0.07), transparent 38%);
+    min-height: 100vh;
+  }
+  .grain {
+    pointer-events: none; position: fixed; inset: 0;
+    opacity: 0.3; mix-blend-mode: multiply; z-index: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 1240px; margin: 0 auto; padding: 32px 32px 80px; }
+
+  header.brand {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 14px; border-bottom: 1px solid var(--line);
+    margin-bottom: 24px;
+  }
+  .logo {
+    font-family: "Fraunces", serif; font-style: italic; font-weight: 600;
+    font-size: 18px; letter-spacing: -0.01em;
+    display: flex; align-items: baseline; gap: 8px;
+    text-decoration: none; color: inherit;
+  }
+  .logo .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--coral); display: inline-block; transform: translateY(-2px); }
+  .toolbar { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+    padding: 8px 14px; border: 1px solid var(--line); background: #fff;
+    color: var(--ink-2); cursor: pointer; border-radius: 2px;
+    transition: background 0.15s, color 0.15s; white-space: nowrap;
+  }
+  .btn:hover { background: var(--ink-2); color: #fff; border-color: var(--ink-2); }
+  .btn.primary {
+    background: var(--coral); color: #fff; border-color: var(--coral); font-weight: 700;
+  }
+  .btn.primary:hover { background: var(--coral-deep); border-color: var(--coral-deep); }
+  .btn[disabled] {
+    background: var(--paper-2); color: rgba(28,33,81,0.4);
+    border-color: var(--line); cursor: not-allowed;
+  }
+  .btn[disabled]:hover { background: var(--paper-2); color: rgba(28,33,81,0.4); border-color: var(--line); }
+
+  /* HOW IT WORKS — moved above */
+  .instructions {
+    background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--ink-2);
+    margin-bottom: 28px; padding: 0; border-radius: 0 4px 4px 0;
+  }
+  .instructions summary {
+    padding: 16px 22px; cursor: pointer; list-style: none;
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: "Fraunces", serif; font-weight: 500; font-size: 18px;
+    letter-spacing: -0.01em;
+  }
+  .instructions summary::-webkit-details-marker { display: none; }
+  .instructions summary::after {
+    content: "+"; font-family: "JetBrains Mono", monospace;
+    font-size: 22px; color: var(--coral); transition: transform 0.2s;
+  }
+  .instructions[open] summary::after { transform: rotate(45deg); }
+  .instructions-body { padding: 4px 24px 24px; }
+  .instructions-body h3 {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--coral-deep); margin: 20px 0 8px; font-weight: 600;
+  }
+  .instructions-body p, .instructions-body li {
+    font-size: 14.5px; line-height: 1.6; color: rgba(28, 33, 81, 0.85);
+  }
+  .instructions-body ol { padding-left: 22px; margin: 0 0 10px; }
+  .instructions-body ol li { margin-bottom: 6px; }
+  .instructions-body ol li::marker { color: var(--coral); font-weight: 600; }
+
+  .mode { display: none; }
+  .mode.active { display: block; }
+
+  /* TWO-COLUMN LAYOUT */
+  .draw-layout {
+    display: grid;
+    grid-template-columns: minmax(360px, 1fr) minmax(380px, 1.05fr);
+    gap: 40px;
+    align-items: start;
+  }
+  @media (max-width: 880px) {
+    .draw-layout { grid-template-columns: 1fr; gap: 28px; }
+    .wrap { padding: 24px 20px 64px; }
+  }
+
+  .card-column { position: relative; }
+  .input-column { display: flex; flex-direction: column; gap: 18px; }
+
+  /* CARD */
+  .card-wrap { position: relative; perspective: 1200px; width: 100%; }
+  .card-stack-bg {
+    position: absolute; top: 0; left: 0; right: 0;
+    aspect-ratio: 5 / 6;
+    background: #fff; border-radius: 8px;
+    border: 1px solid var(--line); z-index: 0;
+  }
+  .card-stack-bg.b1 {
+    transform: translate(7px, 5px) rotate(2deg); z-index: 1;
+    box-shadow: 0 6px 18px -6px rgba(28, 33, 81, 0.12);
+  }
+  .card-stack-bg.b2 {
+    transform: translate(-6px, 9px) rotate(-2.5deg); z-index: 2;
+    box-shadow: 0 6px 18px -6px rgba(28, 33, 81, 0.1);
+  }
+  .card-stack-bg.hidden { display: none; }
+
+  .card {
+    position: relative; aspect-ratio: 5 / 6;
+    background: #fff; border-radius: 8px;
+    box-shadow:
+      0 1px 0 rgba(28, 33, 81, 0.05),
+      0 14px 36px -8px rgba(28, 33, 81, 0.18),
+      0 26px 60px -16px rgba(28, 33, 81, 0.12);
+    padding: 32px 32px;
+    display: flex; flex-direction: column;
+    transform: rotate(-1deg); z-index: 3;
+  }
+  .card.dealing { animation: deal 0.45s ease; }
+  @keyframes deal {
+    0% { transform: translateX(60px) rotate(8deg); opacity: 0; }
+    100% { transform: rotate(-1deg); opacity: 1; }
+  }
+  .card-top {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 14px; border-bottom: 1px solid var(--line);
+  }
+  .card-category {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em;
+    font-weight: 700;
+  }
+  .card-num {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; color: rgba(28, 33, 81, 0.4); letter-spacing: 0.1em;
+  }
+  .card-question {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 16px 0; gap: 18px;
+  }
+  .card-question p.main-q {
+    font-family: "Fraunces", serif; font-weight: 400;
+    font-size: clamp(20px, 2.4vw, 30px); line-height: 1.18;
+    letter-spacing: -0.015em; margin: 0; color: var(--ink);
+  }
+  .card-question p.main-q em { font-style: italic; }
+  .card-hint {
+    font-family: "Manrope", sans-serif;
+    font-size: clamp(13px, 1.1vw, 15px); font-style: italic;
+    color: rgba(28, 33, 81, 0.55); line-height: 1.5;
+    margin: 0; max-width: 90%;
+  }
+  .card-hint::before {
+    content: "✶";
+    color: var(--coral); font-style: normal; margin-right: 6px;
+    font-size: 0.85em; vertical-align: middle;
+  }
+
+  .card.cat-blue { border-top: 6px solid var(--gold-deep); }
+  .card.cat-blue .card-category { color: var(--gold-deep); }
+  .card.cat-blue .card-hint::before { color: var(--gold-deep); }
+  .card.cat-constraint { border-top: 6px solid var(--coral); }
+  .card.cat-constraint .card-category { color: var(--coral-deep); }
+  .card.cat-definition { border-top: 6px solid var(--ink-2); }
+  .card.cat-definition .card-category { color: var(--ink-2); }
+  .card.cat-definition .card-hint::before { color: var(--ink-2); }
+  .card.cat-stress { border-top: 6px solid var(--sage); }
+  .card.cat-stress .card-category { color: var(--sage-deep); }
+  .card.cat-stress .card-hint::before { color: var(--sage-deep); }
+
+  /* RIGHT COLUMN */
+  .namebar {
+    background: #fff; border: 1px solid var(--line);
+    padding: 14px 18px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .namebar label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--ink-2); opacity: 0.7;
+  }
+  .namebar input {
+    flex: 1; min-width: 160px;
+    border: none; background: transparent;
+    border-bottom: 1.5px solid var(--ink-2); padding: 6px 4px;
+    font-family: "Caveat", cursive; font-size: 22px;
+    color: var(--coral-deep);
+  }
+  .namebar input:focus { outline: none; border-bottom-color: var(--coral); }
+
+  .answer-block {
+    background: #fff; border: 1px solid var(--line);
+    padding: 20px 22px; border-radius: 4px;
+  }
+  .answer-block.empty {
+    background: transparent; border-style: dashed; border-color: rgba(28,33,81,0.2);
+    text-align: center; padding: 40px 20px;
+    font-family: "JetBrains Mono", monospace; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.14em;
+    color: rgba(28, 33, 81, 0.4);
+  }
+  .answer-label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--ink-2); opacity: 0.7; margin-bottom: 12px;
+  }
+  .answer-input {
+    width: 100%; border: none; background: transparent;
+    font-family: "Caveat", cursive; font-size: 22px;
+    color: var(--coral-deep); line-height: 1.45;
+    resize: vertical; min-height: 160px; padding: 4px;
+    border-bottom: 1px dashed var(--line);
+  }
+  .answer-input:focus { outline: none; border-bottom-color: var(--coral); }
+
+  .controls-block {
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .controls-primary {
+    display: flex; gap: 8px;
+  }
+  .controls-primary .btn {
+    flex: 1; padding: 13px 18px; font-size: 12px;
+  }
+  .controls-secondary {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .controls-secondary .btn { padding: 9px 14px; font-size: 10px; flex: 1; }
+
+  .progress-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; background: var(--paper-2);
+    border: 1px solid var(--line); border-radius: 2px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; letter-spacing: 0.12em;
+    color: var(--ink-2);
+  }
+  .progress-row .dots { display: flex; gap: 4px; align-items: center; }
+  .progress-row .dot-gap { width: 12px; }
+  .progress-row .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(28, 33, 81, 0.12);
+  }
+  .progress-row .dot.cat-blue { background: rgba(176, 136, 0, 0.18); }
+  .progress-row .dot.cat-definition { background: rgba(47, 60, 126, 0.16); }
+  .progress-row .dot.cat-constraint { background: rgba(249, 97, 103, 0.2); }
+  .progress-row .dot.cat-stress { background: rgba(90, 125, 101, 0.22); }
+  .progress-row .dot.cat-blue.filled { background: var(--gold-deep); }
+  .progress-row .dot.cat-definition.filled { background: var(--ink-2); }
+  .progress-row .dot.cat-constraint.filled { background: var(--coral); }
+  .progress-row .dot.cat-stress.filled { background: var(--sage); }
+
+  /* SUMMARY (unchanged structurally) */
+  .summary-head {
+    margin-bottom: 24px;
+    display: flex; justify-content: space-between; align-items: baseline;
+    flex-wrap: wrap; gap: 12px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--line);
+  }
+  .summary-head h2 {
+    font-family: "Fraunces", serif; font-weight: 500;
+    font-size: clamp(28px, 4vw, 40px); letter-spacing: -0.02em;
+    margin: 0; line-height: 1;
+  }
+  .summary-head h2 em { font-style: italic; color: var(--coral); }
+  .summary-meta {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--ink-2); opacity: 0.7;
+  }
+  .summary-empty {
+    background: #fff; border: 1px dashed var(--line);
+    padding: 32px 24px; text-align: center;
+    font-size: 15px; color: rgba(28,33,81,0.6); margin: 20px 0;
+  }
+  .qa-item {
+    background: #fff; border: 1px solid var(--line);
+    padding: 20px 24px; margin-bottom: 14px;
+    border-left: 4px solid var(--coral);
+  }
+  .qa-item.cat-blue { border-left-color: var(--gold-deep); }
+  .qa-item.cat-constraint { border-left-color: var(--coral); }
+  .qa-item.cat-definition { border-left-color: var(--ink-2); }
+  .qa-item.cat-stress { border-left-color: var(--sage); }
+  .qa-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;
+  }
+  .qa-meta .cat-label { font-weight: 700; }
+  .qa-item.cat-blue .cat-label { color: var(--gold-deep); }
+  .qa-item.cat-constraint .cat-label { color: var(--coral-deep); }
+  .qa-item.cat-definition .cat-label { color: var(--ink-2); }
+  .qa-item.cat-stress .cat-label { color: var(--sage-deep); }
+  .qa-meta .qa-remove {
+    background: none; border: none; cursor: pointer;
+    color: rgba(28,33,81,0.4); font-size: 16px; line-height: 1; padding: 0 4px;
+  }
+  .qa-meta .qa-remove:hover { color: var(--coral); }
+  .qa-question {
+    font-family: "Fraunces", serif; font-size: 19px; line-height: 1.25;
+    margin: 6px 0 4px; color: var(--ink); letter-spacing: -0.01em;
+  }
+  .qa-question em { font-style: italic; }
+  .qa-hint {
+    font-size: 13px; font-style: italic;
+    color: rgba(28, 33, 81, 0.55); margin: 0 0 14px;
+  }
+  .qa-answer {
+    width: 100%; border: none; background: var(--paper);
+    font-family: "Caveat", cursive; font-size: 20px;
+    color: var(--coral-deep); line-height: 1.45;
+    resize: vertical; min-height: 60px;
+    padding: 12px 14px; border-radius: 3px;
+  }
+  .qa-answer:focus { outline: 2px solid var(--coral); outline-offset: -2px; }
+  .summary-actions {
+    display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 24px;
+  }
+
+  .saved-flash {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--ink-2); color: #fff;
+    padding: 8px 14px; border-radius: 999px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 100; pointer-events: none;
+  }
+  .saved-flash.show { opacity: 0.95; transform: translateY(0); }
+
+  @media print {
+    body { background: #fff; }
+    .grain, header.brand .toolbar, .instructions, .draw-layout, .controls-block, .saved-flash, .qa-remove {
+      display: none !important;
+    }
+    .wrap { padding: 0; max-width: none; }
+    .qa-item { page-break-inside: avoid; box-shadow: none; }
+    .qa-answer { background: #fff; border: 1px solid rgba(0,0,0,0.15); }
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="wrap">
+  <header class="brand">
+    <a class="logo" href="../index.html"><span class="dot"></span>Code Club Wales</a>
+    <div class="toolbar">
+      <button class="btn" id="modeToggle">Review answers</button>
+      <button class="btn" onclick="window.print()">Print</button>
+    </div>
+  </header>
+
+  <details class="instructions">
+    <summary>How this works</summary>
+    <div class="instructions-body">
+      <h3>The flow</h3>
+      <ol>
+        <li>Luke goes first. He'll work through some cards on the big screen, talking out loud. Everyone watches and chips in with ideas.</li>
+        <li>Then each of you grabs your own laptop. Type your name. Think about which game you want to design.</li>
+        <li>Tap <strong>Draw card</strong>. Read the question. Use the little hint underneath if you're stuck for ideas. Type your answer. Hit <strong>Save &amp; next card</strong>.</li>
+        <li>Stop whenever you've got enough — five or six cards is plenty.</li>
+        <li>When time's up, tap <strong>Review answers</strong>. We'll go round the room — each person shows their summary, and the others get to challenge them: "What about…?" "Have you thought about…?" Edit your answers live as you go.</li>
+      </ol>
+      <h3>The four phases</h3>
+      <p>The cards come in a deliberate order — first imagining, then defining, then narrowing, then poking holes. Within each phase the order is random, but you'll always finish one phase before moving to the next.</p>
+      <ol>
+        <li><strong style="color: var(--gold-deep)">BLUE SKY</strong> — opens your imagination. What's possible? What's weird? What's exciting?</li>
+        <li><strong style="color: var(--ink-2)">DEFINITION</strong> — pins down what your game actually is. What can the player do? How do they lose?</li>
+        <li><strong style="color: var(--coral-deep)">CONSTRAINT</strong> — narrows you to the smallest version you can actually build.</li>
+        <li><strong style="color: var(--sage-deep)">STRESS TEST</strong> — finds the holes. What breaks? What hasn't been thought through?</li>
+      </ol>
+      <h3>If you get stuck</h3>
+      <ul>
+        <li>It's OK to say "I don't know yet." Type that and move on.</li>
+        <li>The little hint on each card is a starter — but your answer doesn't have to be one of those.</li>
+        <li>You can switch between Drawing and Review at any time.</li>
+      </ul>
+    </div>
+  </details>
+
+  <section class="mode active" id="drawMode">
+    <div class="draw-layout">
+      <div class="card-column">
+        <div class="card-wrap">
+          <div class="card-stack-bg b2" id="bg2"></div>
+          <div class="card-stack-bg b1" id="bg1"></div>
+          <div class="card cat-blue" id="card">
+            <div class="card-top">
+              <span class="card-category" id="cardCategory">Ready</span>
+              <span class="card-num" id="cardNum">— / 18</span>
+            </div>
+            <div class="card-question">
+              <p class="main-q" id="cardQuestion">Type your name, then tap <em>Draw card</em>.</p>
+              <p class="card-hint" id="cardHint" style="display:none"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-column">
+        <div class="namebar">
+          <label for="nameInput">Your name</label>
+          <input id="nameInput" type="text" placeholder="Type here…" autocomplete="off" />
+        </div>
+
+        <div class="answer-block empty" id="answerBlock">
+          Draw a card to start
+        </div>
+
+        <div class="controls-block">
+          <div class="controls-primary">
+            <button class="btn primary" id="drawBtn">Draw card</button>
+            <button class="btn primary" id="saveNextBtn" style="display:none">Save &amp; next card</button>
+          </div>
+          <div class="controls-secondary">
+            <button class="btn" id="resetBtn">Start over</button>
+          </div>
+        </div>
+
+        <div class="progress-row">
+          <span id="progress">0 answered</span>
+          <span class="dots" id="progressDots"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mode" id="summaryMode">
+    <div class="summary-head">
+      <h2>Your <em>answers</em></h2>
+      <div class="summary-meta" id="summaryMeta">0 cards · No name yet</div>
+    </div>
+    <div id="summaryList"></div>
+    <div class="summary-actions">
+      <button class="btn primary" id="backToDrawBtn">← Back to drawing</button>
+      <button class="btn" onclick="window.print()">Print</button>
+    </div>
+  </section>
+</div>
+
+<div class="saved-flash" id="savedFlash">✓ Saved</div>
+
+<script>
+  const QUESTIONS = [
+    { id: 'b1', cat: 'blue', label: 'Blue sky',
+      q: 'If your game could have ONE <em>OP</em> thing in it, what would it be?',
+      hint: 'every pet talks · fly any vehicle · rob anything · become any avatar' },
+    { id: 'b2', cat: 'blue', label: 'Blue sky',
+      q: 'If a YouTuber made a video about your game, what would the thumbnail be?',
+      hint: 'the boss fight · a rare unbox · the chase · the biggest win' },
+    { id: 'c1', cat: 'constraint', label: 'Constraint',
+      q: 'If your game only had ONE button, what does it do?',
+      hint: 'jump · attack · interact · summon · the one thing that matters most' },
+    { id: 'c2', cat: 'constraint', label: 'Constraint',
+      q: "What's the smallest version of your game you could build?",
+      hint: 'one level · one character · one mechanic · no extras' },
+    { id: 'c3', cat: 'constraint', label: 'Constraint',
+      q: "Take away your favourite thing in the game. Is what's left still fun?",
+      hint: "what's the soul of the game? what's just decoration?" },
+    { id: 'd1', cat: 'definition', label: 'Definition',
+      q: 'What can the player DO in your game? Name 3 things.',
+      hint: 'move · attack · build · collect · trade · upgrade · climb' },
+    { id: 'd2', cat: 'definition', label: 'Definition',
+      q: "What's the worst thing that can happen to a player?",
+      hint: 'die · fall off · get caught · lose all your stuff' },
+    { id: 'd3', cat: 'definition', label: 'Definition',
+      q: "What's the difference between a brand new player and someone who's grinded for hours?",
+      hint: 'their pets · their gear · the area they unlocked · what they can do' },
+    { id: 's1', cat: 'stress', label: 'Stress test',
+      q: 'What if two players try to do the same thing at the same time?',
+      hint: 'grab the same item · stand in the same spot · attack each other?' },
+    { id: 's2', cat: 'stress', label: 'Stress test',
+      q: 'What if a player goes AFK? What happens?',
+      hint: 'do they die · does time pass · do they get kicked · or nothing at all?' },
+    { id: 's3', cat: 'stress', label: 'Stress test',
+      q: 'What if a 5-year-old played your game? What would they not understand?',
+      hint: 'controls · rules · why they\'re losing · what to do next?' },
+    { id: 'b4', cat: 'blue', label: 'Blue sky',
+      q: 'How should playing your game make someone FEEL?',
+      hint: 'excited · scared · powerful · sweaty · proud · big brain' },
+    { id: 'd4', cat: 'definition', label: 'Definition',
+      q: 'How does a player WIN your game? Or does it just go on forever?',
+      hint: "reach the top · defeat the boss · highest score · last one standing · or no end?" },
+    { id: 'c4', cat: 'constraint', label: 'Constraint',
+      q: 'If your game only had ONE level or area, what would happen in it?',
+      hint: "where does it take place · what's the goal · what makes it special?" },
+    { id: 's4', cat: 'stress', label: 'Stress test',
+      q: 'What if someone tries to CHEAT in your game? What would they try?',
+      hint: 'go through walls · fly hacks · skip levels · dupe their pets' },
+    { id: 'b5', cat: 'blue', label: 'Blue sky',
+      q: "What's the best thing about playing your game with your mates?",
+      hint: 'team up vs a boss · race them · trade rare stuff · build together' },
+    { id: 'd5', cat: 'definition', label: 'Definition',
+      q: "What does grinding get you in your game? And what do you spend it on?",
+      hint: 'coins · gems · pets · gear · new areas' },
+    { id: 'c5', cat: 'constraint', label: 'Constraint',
+      q: 'If your game had ONE legendary item, what would it be?',
+      hint: 'a legendary pet · a rare skin · a god weapon · the ultimate vehicle' }
+  ];
+  const QMAP = Object.fromEntries(QUESTIONS.map(q => [q.id, q]));
+  const STORAGE_KEY = 'codeclub-phase0-cards-solo';
+
+  let state = { name: '', answers: [], deckOrder: [], currentId: null };
+
+  const CATEGORY_ORDER = ['blue', 'definition', 'constraint', 'stress'];
+
+  function shuffleIds() {
+    const byCat = {};
+    QUESTIONS.forEach(q => {
+      if (!byCat[q.cat]) byCat[q.cat] = [];
+      byCat[q.cat].push(q.id);
+    });
+    Object.values(byCat).forEach(arr => {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    });
+    return CATEGORY_ORDER.flatMap(cat => byCat[cat] || []);
+  }
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) Object.assign(state, JSON.parse(raw));
+    } catch (e) {}
+    if (!Array.isArray(state.answers)) state.answers = [];
+    // Drop any answers/currentId that point to questions no longer in the deck
+    const validIds = new Set(QUESTIONS.map(q => q.id));
+    state.answers = state.answers.filter(a => validIds.has(a.questionId));
+    if (state.currentId && !validIds.has(state.currentId)) state.currentId = null;
+    // Always rebuild deck to reflect current QUESTIONS and respect category order
+    const answered = new Set(state.answers.map(a => a.questionId));
+    state.deckOrder = shuffleIds().filter(id =>
+      !answered.has(id) && id !== state.currentId
+    );
+  }
+  let saveTimer;
+  function save(flash) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+    if (flash) {
+      const f = document.getElementById('savedFlash');
+      f.classList.add('show');
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => f.classList.remove('show'), 1100);
+    }
+  }
+
+  const card = document.getElementById('card');
+  const cardCategory = document.getElementById('cardCategory');
+  const cardNum = document.getElementById('cardNum');
+  const cardQuestion = document.getElementById('cardQuestion');
+  const cardHint = document.getElementById('cardHint');
+  const answerBlock = document.getElementById('answerBlock');
+  const drawBtn = document.getElementById('drawBtn');
+  const saveNextBtn = document.getElementById('saveNextBtn');
+  const nameInput = document.getElementById('nameInput');
+  const progress = document.getElementById('progress');
+  const progressDots = document.getElementById('progressDots');
+  const modeToggle = document.getElementById('modeToggle');
+  const drawMode = document.getElementById('drawMode');
+  const summaryMode = document.getElementById('summaryMode');
+  const summaryList = document.getElementById('summaryList');
+  const summaryMeta = document.getElementById('summaryMeta');
+  const bg1 = document.getElementById('bg1');
+  const bg2 = document.getElementById('bg2');
+
+  function setCardCategory(catKey) {
+    card.classList.remove('cat-blue', 'cat-constraint', 'cat-definition', 'cat-stress');
+    card.classList.add('cat-' + catKey);
+  }
+  function renderProgressDots() {
+    progressDots.innerHTML = '';
+    const filled = state.answers.length;
+    let idx = 0;
+    CATEGORY_ORDER.forEach((cat, ci) => {
+      if (ci > 0) {
+        const gap = document.createElement('span');
+        gap.className = 'dot-gap';
+        progressDots.appendChild(gap);
+      }
+      const count = QUESTIONS.filter(q => q.cat === cat).length;
+      for (let i = 0; i < count; i++) {
+        const d = document.createElement('span');
+        d.className = 'dot cat-' + cat + (idx < filled ? ' filled' : '');
+        progressDots.appendChild(d);
+        idx++;
+      }
+    });
+  }
+  function renderProgress() {
+    const n = state.answers.length;
+    progress.textContent = n + ' answered';
+    summaryMeta.textContent = n + ' card' + (n === 1 ? '' : 's') + (state.name ? ' · ' + state.name : ' · No name yet');
+    renderProgressDots();
+    const remaining = state.deckOrder.length;
+    if (remaining === 0 && !state.currentId) {
+      bg1.classList.add('hidden'); bg2.classList.add('hidden');
+    } else if (remaining < 2) {
+      bg1.classList.remove('hidden'); bg2.classList.add('hidden');
+    } else {
+      bg1.classList.remove('hidden'); bg2.classList.remove('hidden');
+    }
+  }
+  function renderReady() {
+    setCardCategory('blue');
+    cardCategory.textContent = 'Ready';
+    cardQuestion.innerHTML = "Type your name, then tap <em>Draw card</em>.";
+    cardHint.style.display = 'none';
+    cardNum.textContent = '— / ' + QUESTIONS.length;
+    answerBlock.classList.add('empty');
+    answerBlock.innerHTML = 'Draw a card to start';
+    drawBtn.style.display = '';
+    saveNextBtn.style.display = 'none';
+    drawBtn.disabled = !state.name.trim();
+    drawBtn.textContent = 'Draw card';
+  }
+  function renderDeckEmpty() {
+    setCardCategory('blue');
+    cardCategory.textContent = 'Deck empty';
+    cardQuestion.innerHTML = "<em>You've drawn all " + QUESTIONS.length + ". Tap <strong>Review answers</strong> above.</em>";
+    cardHint.style.display = 'none';
+    cardNum.textContent = QUESTIONS.length + ' / ' + QUESTIONS.length;
+    answerBlock.classList.add('empty');
+    answerBlock.innerHTML = 'Tap "Review answers" above';
+    drawBtn.style.display = '';
+    drawBtn.disabled = true;
+    drawBtn.textContent = 'Deck empty';
+    saveNextBtn.style.display = 'none';
+  }
+  function renderCard(id) {
+    const q = QMAP[id];
+    setCardCategory(q.cat);
+    cardCategory.textContent = q.label;
+    cardQuestion.innerHTML = q.q;
+    if (q.hint) {
+      cardHint.textContent = q.hint;
+      cardHint.style.display = '';
+    } else {
+      cardHint.style.display = 'none';
+    }
+    cardNum.textContent = (QUESTIONS.length - state.deckOrder.length) + ' / ' + QUESTIONS.length;
+
+    const existing = state.answers.find(a => a.questionId === id);
+    answerBlock.classList.remove('empty');
+    answerBlock.innerHTML = `
+      <div class="answer-label">Your answer</div>
+      <textarea class="answer-input" id="answerInput" placeholder="Type whatever comes to mind. It's OK if it's messy."></textarea>
+    `;
+    const ta = document.getElementById('answerInput');
+    if (existing) ta.value = existing.answer;
+    setTimeout(() => ta.focus(), 50);
+    ta.addEventListener('input', () => { upsertAnswer(id, ta.value); save(false); });
+
+    drawBtn.style.display = 'none';
+    saveNextBtn.style.display = '';
+    saveNextBtn.disabled = false;
+    card.classList.remove('dealing');
+    void card.offsetWidth;
+    card.classList.add('dealing');
+  }
+  function upsertAnswer(qid, value) {
+    const ix = state.answers.findIndex(a => a.questionId === qid);
+    if (ix >= 0) state.answers[ix].answer = value;
+    else state.answers.push({ questionId: qid, answer: value });
+  }
+
+  function drawCard() {
+    if (!state.name.trim()) { nameInput.focus(); return; }
+    if (state.deckOrder.length === 0) { renderDeckEmpty(); return; }
+    const next = state.deckOrder.shift();
+    state.currentId = next;
+    save(false);
+    renderCard(next);
+    renderProgress();
+  }
+  function saveAndNext() {
+    state.currentId = null;
+    save(true);
+    if (state.deckOrder.length === 0) renderDeckEmpty();
+    else drawCard();
+    renderProgress();
+  }
+  function startOver() {
+    if (!confirm("Clear all your answers and start fresh?")) return;
+    state.answers = [];
+    state.currentId = null;
+    state.deckOrder = shuffleIds();
+    save(true);
+    renderReady();
+    renderProgress();
+  }
+
+  function showDrawMode() {
+    drawMode.classList.add('active');
+    summaryMode.classList.remove('active');
+    modeToggle.textContent = 'Review answers';
+    if (state.currentId) renderCard(state.currentId);
+    else if (state.deckOrder.length === 0) renderDeckEmpty();
+    else renderReady();
+    renderProgress();
+  }
+  function showSummaryMode() {
+    drawMode.classList.remove('active');
+    summaryMode.classList.add('active');
+    modeToggle.textContent = '← Back to drawing';
+    renderSummary();
+  }
+  function renderSummary() {
+    summaryList.innerHTML = '';
+    if (state.answers.length === 0) {
+      summaryList.innerHTML = `<div class="summary-empty">No answers yet. Tap "Back to drawing" to start.</div>`;
+      summaryMeta.textContent = '0 cards · ' + (state.name || 'No name yet');
+      return;
+    }
+    state.answers.forEach((a, idx) => {
+      const q = QMAP[a.questionId];
+      const item = document.createElement('div');
+      item.className = 'qa-item cat-' + q.cat;
+      const hintHtml = q.hint ? `<div class="qa-hint">✶ ${q.hint}</div>` : '';
+      item.innerHTML = `
+        <div class="qa-meta">
+          <span class="cat-label">${q.label} · ${String(idx + 1).padStart(2, '0')}</span>
+          <button class="qa-remove" title="Remove this answer">✕</button>
+        </div>
+        <div class="qa-question">${q.q}</div>
+        ${hintHtml}
+        <textarea class="qa-answer" placeholder="(no answer yet)"></textarea>
+      `;
+      summaryList.appendChild(item);
+      const ta = item.querySelector('.qa-answer');
+      ta.value = a.answer || '';
+      ta.addEventListener('input', () => { upsertAnswer(a.questionId, ta.value); save(false); });
+      item.querySelector('.qa-remove').addEventListener('click', () => {
+        if (!confirm("Remove this answer? The card goes back into the deck.")) return;
+        const ix = state.answers.findIndex(x => x.questionId === a.questionId);
+        if (ix >= 0) state.answers.splice(ix, 1);
+        // Rebuild deck respecting category order
+        const answered = new Set(state.answers.map(x => x.questionId));
+        state.deckOrder = shuffleIds().filter(id =>
+          !answered.has(id) && id !== state.currentId
+        );
+        save(true);
+        renderSummary();
+        renderProgress();
+      });
+    });
+    summaryMeta.textContent = state.answers.length + ' card' + (state.answers.length === 1 ? '' : 's') + ' · ' + (state.name || 'No name yet');
+  }
+
+  nameInput.addEventListener('input', () => {
+    state.name = nameInput.value;
+    save(false);
+    drawBtn.disabled = !state.name.trim() || state.deckOrder.length === 0;
+    renderProgress();
+  });
+  drawBtn.addEventListener('click', drawCard);
+  saveNextBtn.addEventListener('click', saveAndNext);
+  document.getElementById('resetBtn').addEventListener('click', startOver);
+  modeToggle.addEventListener('click', () => {
+    if (drawMode.classList.contains('active')) showSummaryMode();
+    else showDrawMode();
+  });
+  document.getElementById('backToDrawBtn').addEventListener('click', showDrawMode);
+
+  load();
+  nameInput.value = state.name || '';
+  if (state.currentId) renderCard(state.currentId);
+  else if (state.answers.length > 0 && state.deckOrder.length === 0) renderDeckEmpty();
+  else renderReady();
+  renderProgress();
+</script>
+</body>
+</html>

@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Code Club Wales</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #1c2151;
+    --ink-2: #2f3c7e;
+    --coral: #f96167;
+    --coral-deep: #c5453d;
+    --gold: #f9e795;
+    --gold-deep: #b08800;
+    --sage: #5a7d65;
+    --sage-deep: #3f5a48;
+    --paper: #faf7f0;
+    --paper-2: #f0ece1;
+    --line: rgba(28, 33, 81, 0.12);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Manrope", system-ui, sans-serif;
+    background: var(--paper); color: var(--ink); line-height: 1.55;
+    background-image:
+      radial-gradient(circle at 88% 5%, rgba(249, 97, 103, 0.07), transparent 38%),
+      radial-gradient(circle at 12% 90%, rgba(47, 60, 126, 0.07), transparent 38%);
+    min-height: 100vh;
+  }
+  .grain {
+    pointer-events: none; position: fixed; inset: 0;
+    opacity: 0.3; mix-blend-mode: multiply; z-index: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 1240px; margin: 0 auto; padding: 32px 32px 80px; }
+
+  header.brand {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 14px; border-bottom: 1px solid var(--line);
+    margin-bottom: 56px;
+  }
+  .logo {
+    font-family: "Fraunces", serif; font-style: italic; font-weight: 600;
+    font-size: 18px; letter-spacing: -0.01em;
+    display: flex; align-items: baseline; gap: 8px;
+    text-decoration: none; color: inherit;
+  }
+  .logo .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--coral); display: inline-block; transform: translateY(-2px); }
+  .nav { display: flex; gap: 6px; align-items: center; }
+  .nav a {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+    padding: 8px 14px; border: 1px solid var(--line); background: #fff;
+    color: var(--ink-2); border-radius: 2px; text-decoration: none;
+    transition: background 0.15s, color 0.15s; white-space: nowrap;
+  }
+  .nav a:hover { background: var(--ink-2); color: #fff; border-color: var(--ink-2); }
+
+  /* HERO */
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 56px; align-items: end;
+    margin-bottom: 72px;
+  }
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; gap: 28px; align-items: start; }
+    header.brand { margin-bottom: 36px; }
+  }
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em;
+    color: var(--coral-deep); margin-bottom: 22px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .eyebrow::before {
+    content: ""; width: 28px; height: 1px; background: var(--coral);
+  }
+  h1.hero-title {
+    font-family: "Fraunces", serif; font-weight: 400;
+    font-size: clamp(44px, 6.5vw, 84px); letter-spacing: -0.025em;
+    line-height: 1.02; margin: 0 0 24px;
+    color: var(--ink);
+  }
+  h1.hero-title em {
+    font-style: italic; color: var(--coral);
+    font-weight: 500;
+  }
+  .hero-sub {
+    font-family: "Fraunces", serif; font-weight: 400;
+    font-size: clamp(18px, 1.8vw, 22px); line-height: 1.45;
+    color: rgba(28, 33, 81, 0.78); max-width: 520px; margin: 0;
+  }
+  .hero-sub em { font-style: italic; color: var(--ink-2); }
+
+  .hero-aside {
+    background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--coral);
+    padding: 22px 24px; border-radius: 0 4px 4px 0;
+  }
+  .hero-aside h3 {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--coral-deep); margin: 0 0 10px; font-weight: 600;
+  }
+  .hero-aside p {
+    font-size: 14.5px; line-height: 1.6;
+    color: rgba(28, 33, 81, 0.85); margin: 0 0 8px;
+  }
+  .hero-aside p:last-child { margin-bottom: 0; }
+  .hero-aside .signature {
+    font-family: "Caveat", cursive; font-size: 22px;
+    color: var(--coral-deep); margin-top: 10px;
+  }
+
+  /* SECTION HEADS */
+  .section-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    flex-wrap: wrap; gap: 12px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--line);
+    margin-bottom: 28px;
+  }
+  .section-head h2 {
+    font-family: "Fraunces", serif; font-weight: 500;
+    font-size: clamp(28px, 4vw, 40px); letter-spacing: -0.02em;
+    margin: 0; line-height: 1;
+  }
+  .section-head h2 em { font-style: italic; color: var(--coral); }
+  .section-meta {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--ink-2); opacity: 0.7;
+  }
+
+  /* LESSONS */
+  .lessons-section { margin-bottom: 72px; }
+  .lesson-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .lesson-card {
+    position: relative;
+    background: #fff; border: 1px solid var(--line);
+    border-top: 6px solid var(--coral);
+    padding: 24px 24px 22px;
+    border-radius: 4px;
+    text-decoration: none; color: inherit;
+    display: flex; flex-direction: column; gap: 14px;
+    box-shadow:
+      0 1px 0 rgba(28, 33, 81, 0.04),
+      0 10px 28px -10px rgba(28, 33, 81, 0.12);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    min-height: 230px;
+  }
+  a.lesson-card:hover {
+    transform: translateY(-3px) rotate(-0.4deg);
+    box-shadow:
+      0 1px 0 rgba(28, 33, 81, 0.05),
+      0 18px 38px -10px rgba(28, 33, 81, 0.18);
+  }
+  .lesson-card.cat-blue { border-top-color: var(--gold-deep); }
+  .lesson-card.cat-definition { border-top-color: var(--ink-2); }
+  .lesson-card.cat-constraint { border-top-color: var(--coral); }
+  .lesson-card.cat-stress { border-top-color: var(--sage); }
+
+  .lesson-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;
+  }
+  .lesson-phase { font-weight: 700; }
+  .lesson-card.cat-blue .lesson-phase { color: var(--gold-deep); }
+  .lesson-card.cat-definition .lesson-phase { color: var(--ink-2); }
+  .lesson-card.cat-constraint .lesson-phase { color: var(--coral-deep); }
+  .lesson-card.cat-stress .lesson-phase { color: var(--sage-deep); }
+  .lesson-duration {
+    color: rgba(28, 33, 81, 0.4); font-weight: 500;
+  }
+
+  .lesson-title {
+    font-family: "Fraunces", serif; font-weight: 500;
+    font-size: 24px; line-height: 1.15; letter-spacing: -0.015em;
+    margin: 0; color: var(--ink);
+  }
+  .lesson-title em { font-style: italic; }
+  .lesson-desc {
+    font-size: 14px; line-height: 1.55;
+    color: rgba(28, 33, 81, 0.7); margin: 0;
+    flex: 1;
+  }
+  .lesson-cta {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--coral-deep); font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+    margin-top: auto;
+  }
+  .lesson-cta .arrow { transition: transform 0.18s ease; }
+  a.lesson-card:hover .lesson-cta .arrow { transform: translateX(3px); }
+
+  .lesson-card.coming-soon {
+    background: transparent; border-style: dashed; box-shadow: none;
+    pointer-events: none;
+  }
+  .lesson-card.coming-soon .lesson-title,
+  .lesson-card.coming-soon .lesson-desc { opacity: 0.55; }
+  .lesson-card.coming-soon .lesson-cta {
+    color: rgba(28, 33, 81, 0.4);
+  }
+
+  /* PHASES */
+  .phases-section { margin-bottom: 72px; }
+  .phase-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .phase {
+    background: #fff; border: 1px solid var(--line);
+    border-left: 4px solid var(--coral);
+    padding: 18px 20px; border-radius: 0 4px 4px 0;
+  }
+  .phase.p-blue { border-left-color: var(--gold-deep); }
+  .phase.p-definition { border-left-color: var(--ink-2); }
+  .phase.p-constraint { border-left-color: var(--coral); }
+  .phase.p-stress { border-left-color: var(--sage); }
+  .phase-num {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(28, 33, 81, 0.4); margin-bottom: 4px;
+  }
+  .phase-name {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
+    font-weight: 700; margin-bottom: 10px;
+  }
+  .phase.p-blue .phase-name { color: var(--gold-deep); }
+  .phase.p-definition .phase-name { color: var(--ink-2); }
+  .phase.p-constraint .phase-name { color: var(--coral-deep); }
+  .phase.p-stress .phase-name { color: var(--sage-deep); }
+  .phase-text {
+    font-size: 14px; line-height: 1.5;
+    color: rgba(28, 33, 81, 0.78); margin: 0;
+  }
+
+  /* ABOUT */
+  .about-section { margin-bottom: 56px; }
+  .about-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 28px;
+  }
+  .about-grid h3 {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--coral-deep); margin: 0 0 10px; font-weight: 600;
+  }
+  .about-grid p {
+    font-size: 15px; line-height: 1.6;
+    color: rgba(28, 33, 81, 0.85); margin: 0;
+  }
+
+  footer.foot {
+    padding-top: 24px; border-top: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 12px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+    color: rgba(28, 33, 81, 0.5);
+  }
+  footer.foot .made {
+    font-family: "Caveat", cursive; text-transform: none;
+    font-size: 18px; letter-spacing: 0; color: var(--coral-deep);
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="wrap">
+  <header class="brand">
+    <a class="logo" href="index.html"><span class="dot"></span>Code Club Wales</a>
+    <nav class="nav">
+      <a href="#lessons">Lessons</a>
+      <a href="#phases">Approach</a>
+      <a href="#about">About</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div>
+      <div class="eyebrow">A small club · Building real things</div>
+      <h1 class="hero-title">Learning to build by <em>making games</em>, together.</h1>
+      <p class="hero-sub">A code club for curious humans. We design, prototype, and ship small things — starting with the question <em>what would be fun to make?</em></p>
+    </div>
+    <aside class="hero-aside">
+      <h3>Next session</h3>
+      <p><strong>Phase 0 — Question Cards.</strong> We'll each pick a game we want to design, then work through a deck of prompts to pin down what it actually is before we touch any code.</p>
+      <p class="signature">— bring a laptop ✶</p>
+    </aside>
+  </section>
+
+  <section class="lessons-section" id="lessons">
+    <div class="section-head">
+      <h2>The <em>lessons</em></h2>
+      <span class="section-meta">01 — Phase Zero</span>
+    </div>
+
+    <div class="lesson-grid">
+      <a class="lesson-card cat-constraint" href="lessons/phase-0-question-cards.html">
+        <div class="lesson-meta">
+          <span class="lesson-phase">Phase 0 · Pre-code</span>
+          <span class="lesson-duration">~60 min</span>
+        </div>
+        <h3 class="lesson-title">Question <em>Cards</em></h3>
+        <p class="lesson-desc">Draw a deck of prompts to imagine, define, narrow, and stress-test your game idea — before you write a line of code.</p>
+        <div class="lesson-cta">Open lesson <span class="arrow">→</span></div>
+      </a>
+
+      <div class="lesson-card coming-soon">
+        <div class="lesson-meta">
+          <span class="lesson-phase">Coming next</span>
+          <span class="lesson-duration">In planning</span>
+        </div>
+        <h3 class="lesson-title">More <em>lessons</em></h3>
+        <p class="lesson-desc">Phase 1 onwards — taking ideas from the cards into actual code. Prototyping, building, and shipping small games.</p>
+        <div class="lesson-cta">Soon <span class="arrow">→</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="phases-section" id="phases">
+    <div class="section-head">
+      <h2>How we <em>work</em></h2>
+      <span class="section-meta">Four phases · in order</span>
+    </div>
+
+    <div class="phase-grid">
+      <div class="phase p-blue">
+        <div class="phase-num">01</div>
+        <div class="phase-name">Blue sky</div>
+        <p class="phase-text">Open the imagination wide. What's possible? What's weird? What's exciting? No bad ideas yet.</p>
+      </div>
+      <div class="phase p-definition">
+        <div class="phase-num">02</div>
+        <div class="phase-name">Definition</div>
+        <p class="phase-text">Pin down what your game actually is. What can the player do? How do they win or lose?</p>
+      </div>
+      <div class="phase p-constraint">
+        <div class="phase-num">03</div>
+        <div class="phase-name">Constraint</div>
+        <p class="phase-text">Narrow ruthlessly to the smallest version you can actually build in the time you've got.</p>
+      </div>
+      <div class="phase p-stress">
+        <div class="phase-num">04</div>
+        <div class="phase-name">Stress test</div>
+        <p class="phase-text">Find the holes. What breaks? What hasn't been thought through? Fix the worst first.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="about-section" id="about">
+    <div class="section-head">
+      <h2>About the <em>club</em></h2>
+    </div>
+    <div class="about-grid">
+      <div>
+        <h3>What it is</h3>
+        <p>A small, in-person code club. We meet, we sketch, we build. The work is real — small games and tools, designed and shipped end-to-end.</p>
+      </div>
+      <div>
+        <h3>Who it's for</h3>
+        <p>Anyone curious enough to make something they don't yet know how to make. Beginners welcome. Experience welcome. Opinions especially welcome.</p>
+      </div>
+      <div>
+        <h3>How we learn</h3>
+        <p>By doing the thing, then talking about what we did. Less theory, more shipping. We borrow from product design, game design, and software craft.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>Code Club Wales · 2026</span>
+    <span class="made">made with care in Wales ✶</span>
+  </footer>
+</div>
+</body>
+</html>
