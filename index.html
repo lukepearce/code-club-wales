@@ -213,6 +213,55 @@
     color: rgba(28, 33, 81, 0.4);
   }
 
+  /* CREW */
+  .crew-section { margin-bottom: 72px; }
+  .crew-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .crew-card {
+    background: #fff; border: 1px solid var(--line);
+    border-left: 4px solid var(--coral);
+    padding: 18px 22px; border-radius: 0 4px 4px 0;
+    text-decoration: none; color: inherit;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 14px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  .crew-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px -10px rgba(28, 33, 81, 0.18);
+  }
+  .crew-card.c-gold { border-left-color: var(--gold-deep); }
+  .crew-card.c-ink { border-left-color: var(--ink-2); }
+  .crew-card.c-sage { border-left-color: var(--sage); }
+  .crew-card .name-block {
+    display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  }
+  .crew-name {
+    font-family: "Caveat", cursive;
+    font-size: 30px; line-height: 1; color: var(--coral-deep);
+  }
+  .crew-card.c-gold .crew-name { color: var(--gold-deep); }
+  .crew-card.c-ink .crew-name { color: var(--ink-2); }
+  .crew-card.c-sage .crew-name { color: var(--sage-deep); }
+  .crew-url {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; letter-spacing: 0.04em;
+    color: rgba(28, 33, 81, 0.55);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .crew-arrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 20px; color: var(--coral); flex-shrink: 0;
+    transition: transform 0.18s ease;
+  }
+  .crew-card.c-gold .crew-arrow { color: var(--gold-deep); }
+  .crew-card.c-ink .crew-arrow { color: var(--ink-2); }
+  .crew-card.c-sage .crew-arrow { color: var(--sage); }
+  .crew-card:hover .crew-arrow { transform: translateX(4px); }
+
   /* PHASES */
   .phases-section { margin-bottom: 72px; }
   .phase-grid {
@@ -286,6 +335,7 @@
     <a class="logo" href="index.html"><span class="dot"></span>Code Club Wales</a>
     <nav class="nav">
       <a href="#lessons">Lessons</a>
+      <a href="#crew">Crew</a>
       <a href="#phases">Approach</a>
       <a href="#about">About</a>
     </nav>
@@ -330,6 +380,36 @@
         <p class="lesson-desc">Phase 1 onwards — taking ideas from the cards into actual code. Prototyping, building, and shipping small games.</p>
         <div class="lesson-cta">Soon <span class="arrow">→</span></div>
       </div>
+    </div>
+  </section>
+
+  <section class="crew-section" id="crew">
+    <div class="section-head">
+      <h2>The <em>crew</em></h2>
+      <span class="section-meta">Their sites · live</span>
+    </div>
+    <div class="crew-grid">
+      <a class="crew-card c-gold" href="https://alex-c.codeclub.wales" target="_blank" rel="noopener">
+        <div class="name-block">
+          <div class="crew-name">Alex</div>
+          <div class="crew-url">alex-c.codeclub.wales</div>
+        </div>
+        <span class="crew-arrow">→</span>
+      </a>
+      <a class="crew-card c-ink" href="https://nathanb.codeclub.wales" target="_blank" rel="noopener">
+        <div class="name-block">
+          <div class="crew-name">Nathan</div>
+          <div class="crew-url">nathanb.codeclub.wales</div>
+        </div>
+        <span class="crew-arrow">→</span>
+      </a>
+      <a class="crew-card c-sage" href="https://nicholasalinta.codeclub.wales" target="_blank" rel="noopener">
+        <div class="name-block">
+          <div class="crew-name">Nicholas</div>
+          <div class="crew-url">nicholasalinta.codeclub.wales</div>
+        </div>
+        <span class="crew-arrow">→</span>
+      </a>
     </div>
   </section>
 
