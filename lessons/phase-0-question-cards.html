@@ -310,6 +310,15 @@
     background: #fff; border: 1px solid var(--line);
     padding: 20px 24px; margin-bottom: 14px;
     border-left: 4px solid var(--coral);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+  .qa-item .qa-left { display: flex; flex-direction: column; min-width: 0; }
+  .qa-item .qa-right { min-width: 0; }
+  @media (max-width: 880px) {
+    .qa-item { grid-template-columns: 1fr; gap: 14px; }
   }
   .qa-item.cat-blue { border-left-color: var(--gold-deep); }
   .qa-item.cat-constraint { border-left-color: var(--coral); }
@@ -344,8 +353,10 @@
     width: 100%; border: none; background: var(--paper);
     font-family: "Caveat", cursive; font-size: 20px;
     color: var(--coral-deep); line-height: 1.45;
-    resize: vertical; min-height: 60px;
+    resize: none; overflow: hidden;
+    min-height: 120px;
     padding: 12px 14px; border-radius: 3px;
+    box-sizing: border-box;
   }
   .qa-answer:focus { outline: 2px solid var(--coral); outline-offset: -2px; }
   .summary-actions {
@@ -754,18 +765,24 @@
       item.className = 'qa-item cat-' + q.cat;
       const hintHtml = q.hint ? `<div class="qa-hint">✶ ${q.hint}</div>` : '';
       item.innerHTML = `
-        <div class="qa-meta">
-          <span class="cat-label">${q.label} · ${String(idx + 1).padStart(2, '0')}</span>
-          <button class="qa-remove" title="Remove this answer">✕</button>
+        <div class="qa-left">
+          <div class="qa-meta">
+            <span class="cat-label">${q.label} · ${String(idx + 1).padStart(2, '0')}</span>
+            <button class="qa-remove" title="Remove this answer">✕</button>
+          </div>
+          <div class="qa-question">${q.q}</div>
+          ${hintHtml}
         </div>
-        <div class="qa-question">${q.q}</div>
-        ${hintHtml}
-        <textarea class="qa-answer" placeholder="(no answer yet)"></textarea>
+        <div class="qa-right">
+          <textarea class="qa-answer" placeholder="(no answer yet)"></textarea>
+        </div>
       `;
       summaryList.appendChild(item);
       const ta = item.querySelector('.qa-answer');
       ta.value = a.answer || '';
-      ta.addEventListener('input', () => { upsertAnswer(a.questionId, ta.value); save(false); });
+      const autoResize = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
+      ta.addEventListener('input', () => { upsertAnswer(a.questionId, ta.value); save(false); autoResize(); });
+      requestAnimationFrame(autoResize);
       item.querySelector('.qa-remove').addEventListener('click', () => {
         if (!confirm("Remove this answer? The card goes back into the deck.")) return;
         const ix = state.answers.findIndex(x => x.questionId === a.questionId);
