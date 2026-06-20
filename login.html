@@ -32,11 +32,12 @@
     h1 { font-family: "Fraunces", serif; font-size: 26px; margin: 0 0 8px; letter-spacing: -0.01em; }
     p.sub { margin: 0 0 22px; color: var(--ink-2); }
     label { display: block; font-size: 13px; font-weight: 600; margin: 0 0 6px; }
-    input[type=email] {
+    input {
       width: 100%; padding: 12px 14px; font-size: 16px; font-family: inherit;
       border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink);
     }
-    input[type=email]:focus { outline: 2px solid var(--coral); outline-offset: 1px; }
+    input#code { font-family: "JetBrains Mono", monospace; letter-spacing: 0.08em; text-transform: uppercase; }
+    input:focus { outline: 2px solid var(--coral); outline-offset: 1px; }
     button {
       margin-top: 16px; width: 100%; padding: 13px 16px; font-size: 15px; font-weight: 700; font-family: inherit;
       color: #fff; background: var(--coral); border: 0; border-radius: 10px; cursor: pointer; transition: background .15s;
@@ -53,18 +54,20 @@
 <body>
   <main class="card">
     <p class="logo"><span class="flag">🏴󠁧󠁢󠁷󠁬󠁳󠁿</span>Code Club Wales</p>
-    <p class="eyebrow">Crew sign-in</p>
-    <h1>Sign in</h1>
-    <p class="sub">Enter your email and we'll send you a one-time sign-in link. No password to remember.</p>
+    <p class="eyebrow">Crew access</p>
+    <h1>Enter the code</h1>
+    <p class="sub">Type this week's Code Club code to open the lesson. Your coach will tell you what it is.</p>
 
     <form id="form">
-      <label for="email">Email</label>
-      <input id="email" name="email" type="email" autocomplete="email" required placeholder="you@example.com" />
-      <button id="btn" type="submit">Send my sign-in link</button>
+      <label for="code">This week's code</label>
+      <input id="code" name="code" type="text" inputmode="text" autocomplete="off"
+             autocapitalize="characters" autocorrect="off" spellcheck="false"
+             required placeholder="e.g. DRAIG-2026" />
+      <button id="btn" type="submit">Open the lesson</button>
     </form>
 
     <div id="msg" class="msg"></div>
-    <p class="foot">Only Crew members on the club list can sign in. Not on the list? <a href="/">Ask the organiser.</a></p>
+    <p class="foot">Don't have the code? <a href="/">Ask the organiser.</a></p>
   </main>
 
   <script>
@@ -74,38 +77,38 @@
     // Where to land after sign-in — respects ?next=/some/path, defaults to home.
     const params = new URLSearchParams(location.search);
     const next = params.get('next') || '/';
-    const callbackURL = next.startsWith('/') ? next : '/';
+    const dest = next.startsWith('/') ? next : '/';
 
     function show(kind, text) { msg.className = 'msg ' + kind; msg.textContent = text; }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = document.getElementById('email').value.trim();
-      if (!email) return;
+      const code = document.getElementById('code').value.trim();
+      if (!code) return;
       btn.disabled = true;
-      btn.textContent = 'Sending…';
+      btn.textContent = 'Checking…';
       try {
-        const res = await fetch('/api/auth/sign-in/magic-link', {
+        const res = await fetch('/api/access', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ email, callbackURL }),
+          body: JSON.stringify({ code }),
         });
         if (res.ok) {
-          show('ok', "Check your email — we've sent a sign-in link. It works once and expires in 15 minutes.");
-          form.querySelector('input').disabled = true;
-          btn.textContent = 'Link sent';
+          show('ok', 'Got it — opening the lesson…');
+          btn.textContent = 'Welcome!';
+          location.assign(dest);
         } else {
           let detail = '';
-          try { detail = (await res.json())?.message || ''; } catch {}
-          show('err', detail || "We couldn't send a link to that email. Double-check it and try again.");
+          try { detail = (await res.json())?.error || ''; } catch {}
+          show('err', detail || "That code didn't work. Check it and try again.");
           btn.disabled = false;
-          btn.textContent = 'Send my sign-in link';
+          btn.textContent = 'Open the lesson';
         }
       } catch {
         show('err', 'Something went wrong reaching the server. Try again in a moment.');
         btn.disabled = false;
-        btn.textContent = 'Send my sign-in link';
+        btn.textContent = 'Open the lesson';
       }
     });
   </script>
