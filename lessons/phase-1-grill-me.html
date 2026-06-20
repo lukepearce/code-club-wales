@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Phase 1 · Grill Me — Code Club Wales</title>
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏴󠁧󠁢󠁷󠁬󠁳󠁿</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #1c2151;
+    --ink-2: #2f3c7e;
+    --coral: #f96167;
+    --coral-deep: #c5453d;
+    --gold: #f9e795;
+    --gold-deep: #b08800;
+    --sage: #5a7d65;
+    --sage-deep: #3f5a48;
+    --paper: #faf7f0;
+    --paper-2: #f0ece1;
+    --line: rgba(28, 33, 81, 0.12);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Manrope", system-ui, sans-serif;
+    background: var(--paper); color: var(--ink); line-height: 1.55;
+    background-image:
+      radial-gradient(circle at 88% 5%, rgba(249, 97, 103, 0.07), transparent 38%),
+      radial-gradient(circle at 12% 90%, rgba(47, 60, 126, 0.07), transparent 38%);
+    min-height: 100vh;
+  }
+  .grain {
+    pointer-events: none; position: fixed; inset: 0;
+    opacity: 0.3; mix-blend-mode: multiply; z-index: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 880px; margin: 0 auto; padding: 32px 32px 80px; }
+
+  header.brand {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 14px; border-bottom: 1px solid var(--line);
+    margin-bottom: 24px;
+  }
+  .logo {
+    font-family: "Fraunces", serif; font-style: italic; font-weight: 600;
+    font-size: 18px; letter-spacing: -0.01em;
+    display: flex; align-items: baseline; gap: 8px;
+    text-decoration: none; color: inherit;
+  }
+  .logo .flag { font-size: 20px; line-height: 1; margin-right: 6px; display: inline-block; transform: translateY(2px); }
+  .toolbar { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+    padding: 8px 14px; border: 1px solid var(--line); background: #fff;
+    color: var(--ink-2); cursor: pointer; border-radius: 2px;
+    transition: background 0.15s, color 0.15s; white-space: nowrap; text-decoration: none;
+  }
+  .btn:hover { background: var(--ink-2); color: #fff; border-color: var(--ink-2); }
+  .btn.primary { background: var(--coral); color: #fff; border-color: var(--coral); font-weight: 700; }
+  .btn.primary:hover { background: var(--coral-deep); border-color: var(--coral-deep); }
+  .btn[disabled] { background: var(--paper-2); color: rgba(28,33,81,0.4); border-color: var(--line); cursor: not-allowed; }
+  .btn[disabled]:hover { background: var(--paper-2); color: rgba(28,33,81,0.4); border-color: var(--line); }
+
+  .lesson-head { margin-bottom: 22px; }
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.16em; color: var(--coral-deep);
+    font-weight: 600; margin-bottom: 8px;
+  }
+  .lesson-head h1 {
+    font-family: "Fraunces", serif; font-weight: 600; letter-spacing: -0.02em;
+    font-size: clamp(30px, 6vw, 46px); margin: 0 0 8px; line-height: 1.04;
+  }
+  .lesson-head h1 em { font-style: italic; color: var(--coral-deep); }
+  .lesson-head .sub { font-size: 16px; color: rgba(28,33,81,0.8); max-width: 60ch; }
+
+  /* HOW IT WORKS */
+  .instructions {
+    background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--ink-2);
+    margin-bottom: 24px; padding: 0; border-radius: 0 4px 4px 0;
+  }
+  .instructions summary {
+    padding: 16px 22px; cursor: pointer; list-style: none;
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: "Fraunces", serif; font-weight: 500; font-size: 18px; letter-spacing: -0.01em;
+  }
+  .instructions summary::-webkit-details-marker { display: none; }
+  .instructions summary::after {
+    content: "+"; font-family: "JetBrains Mono", monospace;
+    font-size: 22px; color: var(--coral); transition: transform 0.2s;
+  }
+  .instructions[open] summary::after { transform: rotate(45deg); }
+  .instructions-body { padding: 4px 24px 22px; }
+  .instructions-body p, .instructions-body li { font-size: 14.5px; line-height: 1.6; color: rgba(28, 33, 81, 0.85); }
+  .instructions-body ol { padding-left: 22px; margin: 0; }
+  .instructions-body ol li { margin-bottom: 6px; }
+  .instructions-body ol li::marker { color: var(--coral); font-weight: 600; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* INTAKE */
+  .card {
+    background: #fff; border: 1px solid var(--line); border-radius: 6px;
+    padding: 26px 26px 24px; box-shadow: 0 1px 0 rgba(28,33,81,0.04);
+  }
+  .card h2 {
+    font-family: "Fraunces", serif; font-weight: 600; font-size: 22px;
+    letter-spacing: -0.01em; margin: 0 0 4px;
+  }
+  .card .lead { font-size: 15px; color: rgba(28,33,81,0.8); margin: 0 0 18px; }
+  .recap {
+    background: var(--paper-2); border-radius: 5px; padding: 14px 16px;
+    margin: 0 0 18px; max-height: 320px; overflow-y: auto;
+  }
+  .recap .qa { padding: 8px 0; border-bottom: 1px dashed var(--line); }
+  .recap .qa:last-child { border-bottom: none; }
+  .recap .qa .q { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--ink-2); font-family: "JetBrains Mono", monospace; margin-bottom: 3px; }
+  .recap .qa .a { font-size: 15px; color: var(--ink); }
+  .field-label {
+    font-family: "JetBrains Mono", monospace; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--coral-deep); font-weight: 600;
+    display: block; margin: 0 0 6px;
+  }
+  input.text, textarea.text {
+    width: 100%; font-family: "Manrope", sans-serif; font-size: 15px; color: var(--ink);
+    background: var(--paper); border: 1px solid var(--line); border-radius: 4px;
+    padding: 10px 12px; margin-bottom: 14px;
+  }
+  textarea.text { min-height: 120px; resize: vertical; line-height: 1.5; }
+  input.text:focus, textarea.text:focus { outline: none; border-color: var(--ink-2); }
+  .row-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .link-btn {
+    background: none; border: none; cursor: pointer; padding: 0;
+    color: var(--ink-2); font-size: 13px; text-decoration: underline; font-family: inherit;
+  }
+  .link-btn:hover { color: var(--coral-deep); }
+  .muted { font-size: 13px; color: rgba(28,33,81,0.55); }
+
+  /* CHAT */
+  .chat-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
+  }
+  .chat-meta .who { font-family: "Fraunces", serif; font-style: italic; font-size: 17px; }
+  .chat-meta .who b { font-style: normal; font-weight: 700; }
+  .chat {
+    background: #fff; border: 1px solid var(--line); border-radius: 6px;
+    padding: 18px; min-height: 320px; max-height: 56vh; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .msg { display: flex; gap: 10px; max-width: 88%; }
+  .msg .bubble { padding: 11px 14px; border-radius: 12px; font-size: 15px; line-height: 1.5; white-space: pre-wrap; }
+  .msg .tag {
+    font-family: "JetBrains Mono", monospace; font-size: 9px; text-transform: uppercase;
+    letter-spacing: 0.12em; align-self: flex-end; padding-bottom: 4px; opacity: 0.6;
+  }
+  .msg.coach { align-self: flex-start; }
+  .msg.coach .bubble { background: var(--paper-2); border: 1px solid var(--line); border-bottom-left-radius: 3px; }
+  .msg.coach .tag { color: var(--coral-deep); }
+  .msg.me { align-self: flex-end; flex-direction: row-reverse; }
+  .msg.me .bubble { background: var(--ink-2); color: #fff; border-bottom-right-radius: 3px; }
+  .msg.me .tag { color: var(--ink-2); }
+  .typing { align-self: flex-start; font-size: 14px; color: rgba(28,33,81,0.5); font-style: italic; }
+  .typing .dots span { animation: blink 1.2s infinite; }
+  .typing .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing .dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%, 60%, 100% { opacity: 0.25; } 30% { opacity: 1; } }
+
+  .composer { display: flex; gap: 10px; margin-top: 14px; align-items: flex-end; }
+  .composer textarea {
+    flex: 1; font-family: "Manrope", sans-serif; font-size: 15px; color: var(--ink);
+    background: #fff; border: 1px solid var(--line); border-radius: 6px;
+    padding: 11px 13px; resize: none; min-height: 48px; max-height: 160px; line-height: 1.5;
+  }
+  .composer textarea:focus { outline: none; border-color: var(--ink-2); }
+  .composer .btn { height: 48px; }
+
+  .finish-row { margin-top: 14px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .err { color: var(--coral-deep); font-size: 13px; margin-top: 8px; min-height: 16px; }
+
+  /* SPEC */
+  .spec {
+    background: #fff; border: 1px solid var(--line); border-radius: 6px;
+    border-top: 5px solid var(--gold-deep); padding: 26px 28px;
+  }
+  .spec h1 {
+    font-family: "Fraunces", serif; font-weight: 600; font-size: 28px;
+    letter-spacing: -0.01em; margin: 0 0 14px; line-height: 1.1;
+  }
+  .spec h2 {
+    font-family: "JetBrains Mono", monospace; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.14em; color: var(--coral-deep); margin: 20px 0 6px; font-weight: 600;
+  }
+  .spec p { margin: 0 0 8px; font-size: 15.5px; line-height: 1.6; }
+  .spec ul { margin: 0 0 8px; padding-left: 22px; }
+  .spec li { margin-bottom: 5px; font-size: 15.5px; line-height: 1.55; }
+  .spec strong { color: var(--ink-2); }
+
+  footer.foot {
+    margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line);
+    font-family: "JetBrains Mono", monospace; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.14em; color: rgba(28, 33, 81, 0.5);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  footer .made { font-family: "Caveat", cursive; text-transform: none; font-size: 18px; letter-spacing: 0; color: var(--coral-deep); }
+
+  @media (max-width: 560px) {
+    .wrap { padding: 22px 18px 64px; }
+    .msg { max-width: 95%; }
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="wrap">
+  <header class="brand">
+    <a class="logo" href="/"><span class="flag">🏴󠁧󠁢󠁷󠁬󠁳󠁿</span>Code Club Wales</a>
+    <div class="toolbar">
+      <a class="btn" href="lessons/phase-0-question-cards">← Question Cards</a>
+      <button class="btn" id="restartBtn">Start over</button>
+    </div>
+  </header>
+
+  <div class="lesson-head">
+    <div class="eyebrow">Phase 1 · Pre-code</div>
+    <h1>Grill <em>Me</em></h1>
+    <p class="sub">Last time you filled a deck of cards about your game. Now a game-design coach is going to grill you on it — one sharp question at a time — until your idea is small and clear enough to actually build.</p>
+  </div>
+
+  <details class="instructions">
+    <summary>How it works</summary>
+    <div class="instructions-body">
+      <ol>
+        <li>The coach has read your answers from the <strong>Question Cards</strong> session.</li>
+        <li>It asks you <strong>one question at a time</strong>. Answer honestly — short is fine.</li>
+        <li>It'll push back when something's fuzzy, and suggest its own idea for you to react to.</li>
+        <li>The goal: shrink your game to the <strong>smallest version you could actually build</strong>.</li>
+        <li>When you've had enough, hit <strong>Finish &amp; get my game plan</strong> for a written one-pager.</li>
+      </ol>
+    </div>
+  </details>
+
+  <!-- INTAKE: returning with saved answers -->
+  <section class="panel" id="intakeSaved">
+    <div class="card">
+      <h2 id="welcomeLine">Welcome back!</h2>
+      <p class="lead">Here's what you said last time. Ready to defend it?</p>
+      <div class="recap" id="recapList"></div>
+      <div class="row-actions">
+        <button class="btn primary" id="startSavedBtn">Start grilling →</button>
+        <button class="link-btn" id="notMineBtn">These aren't mine / I'm on a different device</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- INTAKE: paste fallback -->
+  <section class="panel" id="intakePaste">
+    <div class="card">
+      <h2>Bring your answers</h2>
+      <p class="lead">No saved answers found on this device. Paste what you wrote in the Question Cards lesson — or just describe your game idea in your own words.</p>
+      <label class="field-label" for="pasteName">Your name</label>
+      <input class="text" id="pasteName" type="text" placeholder="e.g. Alex" />
+      <label class="field-label" for="pasteBox">Your answers or game idea</label>
+      <textarea class="text" id="pasteBox" placeholder="Paste your card answers here, or describe your game: what it is, what you do, how you win..."></textarea>
+      <div class="row-actions">
+        <button class="btn primary" id="startPasteBtn">Start grilling →</button>
+        <span class="muted">Tip: on the Question Cards page, your work is saved automatically — open it on the same device to load it here.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHAT -->
+  <section class="panel" id="chatPanel">
+    <div class="chat-meta">
+      <span class="who" id="chatWho">Grilling session</span>
+      <button class="link-btn" id="reviewAnswersBtn">Show my card answers</button>
+    </div>
+    <div class="chat" id="chatLog"></div>
+    <div class="composer">
+      <textarea id="composerInput" placeholder="Type your answer..." rows="1"></textarea>
+      <button class="btn primary" id="sendBtn">Send</button>
+    </div>
+    <div class="err" id="chatErr"></div>
+    <div class="finish-row">
+      <span class="muted">Take your time — there's no rush.</span>
+      <button class="btn" id="finishBtn">Finish &amp; get my game plan →</button>
+    </div>
+  </section>
+
+  <!-- SPEC -->
+  <section class="panel" id="specPanel">
+    <div class="chat-meta">
+      <span class="who">Your <b>game plan</b></span>
+      <div class="toolbar">
+        <button class="btn primary" id="downloadPlanBtn">⬇ Download</button>
+        <button class="btn" id="printPlanBtn">🖨 Print</button>
+        <button class="btn" id="backToChatBtn">← Keep grilling</button>
+      </div>
+    </div>
+    <div id="specBody"></div>
+  </section>
+
+  <footer class="foot">
+    <span>Code Club Wales · Phase 1</span>
+    <span class="made">grilled with care in Wales ✶</span>
+  </footer>
+</div>
+
+<script>
+  // Plain-text map of the Question Cards questions, keyed by the id stored in
+  // localStorage by lessons/phase-0-question-cards.html.
+  const QTEXT = {
+    b1: 'If your game could have ONE OP thing in it, what would it be?',
+    b2: 'If a YouTuber made a video about your game, what would the thumbnail be?',
+    c1: 'If your game only had ONE button, what does it do?',
+    c2: "What's the smallest version of your game you could build?",
+    c3: "Take away your favourite thing in the game. Is what's left still fun?",
+    d1: 'What can the player DO in your game? Name 3 things.',
+    d2: "What's the worst thing that can happen to a player?",
+    d3: "What's the difference between a brand new player and someone who's grinded for hours?",
+    s1: 'What if two players try to do the same thing at the same time?',
+    s2: 'What if a player goes AFK? What happens?',
+    s3: 'What if a 5-year-old played your game? What would they not understand?',
+    b4: 'How should playing your game make someone FEEL?',
+    d4: 'How does a player WIN your game? Or does it just go on forever?',
+    c4: 'If your game only had ONE level or area, what would happen in it?',
+    s4: 'What if someone tries to CHEAT in your game? What would they try?',
+    b5: "What's the best thing about playing your game with your mates?",
+    d5: "What does grinding get you in your game? And what do you spend it on?",
+    c5: 'If your game had ONE legendary item, what would it be?'
+  };
+
+  const CARDS_KEY = 'codeclub-phase0-cards-solo';
+  const GRILL_KEY = 'codeclub-phase1-grill-solo';
+
+  // state: { name, qa: [{q,a}], messages: [{role, content}], plan: {object|null}, planRaw }
+  let state = { name: '', qa: [], messages: [], plan: null, planRaw: '' };
+
+  const $ = (id) => document.getElementById(id);
+  const panels = {
+    intakeSaved: $('intakeSaved'),
+    intakePaste: $('intakePaste'),
+    chat: $('chatPanel'),
+    spec: $('specPanel')
+  };
+  function show(name) {
+    Object.values(panels).forEach((p) => p.classList.remove('active'));
+    panels[name].classList.add('active');
+  }
+
+  function loadCards() {
+    try {
+      const raw = localStorage.getItem(CARDS_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      const answers = Array.isArray(data.answers) ? data.answers : [];
+      const qa = answers
+        .filter((a) => a && String(a.answer || '').trim() && QTEXT[a.questionId])
+        .map((a) => ({ q: QTEXT[a.questionId], a: String(a.answer).trim() }));
+      return { name: String(data.name || '').trim(), qa };
+    } catch (e) { return null; }
+  }
+
+  function loadGrill() {
+    try {
+      const raw = localStorage.getItem(GRILL_KEY);
+      if (!raw) return null;
+      const d = JSON.parse(raw);
+      return {
+        name: String(d.name || ''),
+        qa: Array.isArray(d.qa) ? d.qa : [],
+        messages: Array.isArray(d.messages) ? d.messages : [],
+        plan: d.plan && typeof d.plan === 'object' ? d.plan : null,
+        planRaw: String(d.planRaw || '')
+      };
+    } catch (e) { return null; }
+  }
+
+  function saveGrill() {
+    try {
+      localStorage.setItem(GRILL_KEY, JSON.stringify({ ...state, updatedAt: Date.now() }));
+    } catch (e) {}
+  }
+
+  // ---- rendering ----
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function renderRecap() {
+    const list = $('recapList');
+    list.innerHTML = '';
+    state.qa.forEach(({ q, a }) => {
+      const el = document.createElement('div');
+      el.className = 'qa';
+      el.innerHTML = `<div class="q">${escapeHtml(q)}</div><div class="a">${escapeHtml(a)}</div>`;
+      list.appendChild(el);
+    });
+    $('welcomeLine').textContent = state.name ? `Welcome back, ${state.name}!` : 'Welcome back!';
+  }
+
+  const chatLog = $('chatLog');
+  function addBubble(role, text) {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg ' + (role === 'assistant' ? 'coach' : 'me');
+    wrap.innerHTML = `<div class="tag">${role === 'assistant' ? 'Coach' : 'You'}</div><div class="bubble">${escapeHtml(text)}</div>`;
+    chatLog.appendChild(wrap);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+  function renderChat() {
+    chatLog.innerHTML = '';
+    state.messages.forEach((m) => addBubble(m.role, m.content));
+  }
+  let typingEl = null;
+  function showTyping(on) {
+    if (on && !typingEl) {
+      typingEl = document.createElement('div');
+      typingEl.className = 'typing';
+      typingEl.innerHTML = 'Coach is thinking<span class="dots"><span>.</span><span>.</span><span>.</span></span>';
+      chatLog.appendChild(typingEl);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    } else if (!on && typingEl) {
+      typingEl.remove();
+      typingEl = null;
+    }
+  }
+
+  // Minimal Markdown -> HTML for the final game plan.
+  function renderMarkdown(md) {
+    const lines = String(md).split('\n');
+    let html = '';
+    let inList = false;
+    const inline = (t) => escapeHtml(t)
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>');
+    for (let line of lines) {
+      const t = line.trim();
+      if (/^#\s+/.test(t)) { if (inList) { html += '</ul>'; inList = false; } html += `<h1>${inline(t.replace(/^#\s+/, ''))}</h1>`; }
+      else if (/^##\s+/.test(t)) { if (inList) { html += '</ul>'; inList = false; } html += `<h2>${inline(t.replace(/^##\s+/, ''))}</h2>`; }
+      else if (/^[-*]\s+/.test(t)) { if (!inList) { html += '<ul>'; inList = true; } html += `<li>${inline(t.replace(/^[-*]\s+/, ''))}</li>`; }
+      else if (t === '') { if (inList) { html += '</ul>'; inList = false; } }
+      else { if (inList) { html += '</ul>'; inList = false; } html += `<p>${inline(t)}</p>`; }
+    }
+    if (inList) html += '</ul>';
+    return html;
+  }
+
+  // ---- game plan poster ----
+  function parsePlan(text) {
+    let t = String(text || '').trim();
+    const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fence) t = fence[1].trim();
+    const s = t.indexOf('{'), e = t.lastIndexOf('}');
+    if (s >= 0 && e > s) t = t.slice(s, e + 1);
+    const o = JSON.parse(t);
+    return {
+      gameName: String(o.gameName || o.name || 'My Game').trim() || 'My Game',
+      tagline: String(o.tagline || '').trim(),
+      bigIdea: String(o.bigIdea || '').trim(),
+      coreLoop: String(o.coreLoop || '').trim(),
+      mainAction: String(o.mainAction || '').trim(),
+      howYouWin: String(o.howYouWin || '').trim(),
+      v1: String(o.v1 || o.smallestVersion || '').trim(),
+      notInV1: Array.isArray(o.notInV1) ? o.notInV1.map((x) => String(x).trim()).filter(Boolean) : [],
+      nextStep: String(o.nextStep || '').trim(),
+      hypeLine: String(o.hypeLine || '').trim()
+    };
+  }
+
+  function prettyDate() {
+    try { return new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); }
+    catch (e) { return ''; }
+  }
+
+  function planStyles() {
+    return `<style>
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Fraunces:ital,opsz,wght@1,9..144,600..900&family=JetBrains+Mono:wght@500;700&family=Manrope:wght@400;500;600;700&display=swap');
+.gp{font-family:"Manrope",system-ui,sans-serif;color:#1c2151;line-height:1.55;padding:8px}
+.gp *{box-sizing:border-box}
+.gp-card{max-width:760px;margin:0 auto;background:#fff;border:1px solid rgba(28,33,81,.12);border-radius:16px;overflow:hidden;box-shadow:0 18px 50px -28px rgba(28,33,81,.5)}
+.gp-hero{position:relative;padding:34px 30px 30px;color:#fff;background:linear-gradient(135deg,#2f3c7e 0%,#c5453d 70%,#f96167 100%);overflow:hidden}
+.gp-hero:before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 12% 22%,rgba(255,255,255,.5) 0 1.5px,transparent 2px),radial-gradient(circle at 85% 18%,rgba(255,255,255,.4) 0 1.5px,transparent 2px),radial-gradient(circle at 70% 75%,rgba(255,255,255,.35) 0 1.5px,transparent 2px),radial-gradient(circle at 30% 80%,rgba(255,255,255,.3) 0 1.5px,transparent 2px);opacity:.8;pointer-events:none}
+.gp-kicker{position:relative;font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#f9e795;font-weight:700;margin-bottom:10px}
+.gp-title{position:relative;font-family:"Fraunces",serif;font-style:italic;font-weight:800;font-size:clamp(34px,7.5vw,58px);line-height:1;margin:0 0 10px;text-shadow:0 2px 0 rgba(28,33,81,.25)}
+.gp-tag{position:relative;font-size:clamp(15px,3.4vw,19px);font-weight:600;color:rgba(255,255,255,.92);max-width:48ch}
+.gp-by{position:relative;display:inline-block;margin-top:16px;font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:6px 13px}
+.gp-body{padding:24px 26px}
+.gp-panel{border:1px solid rgba(28,33,81,.12);border-left:5px solid #2f3c7e;border-radius:10px;padding:14px 16px;margin-bottom:14px;background:#faf7f0}
+.gp-panel.a-coral{border-left-color:#f96167}.gp-panel.a-gold{border-left-color:#b08800}.gp-panel.a-sage{border-left-color:#5a7d65}.gp-panel.a-ink{border-left-color:#2f3c7e}
+.gp-h{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+.gp-ico{font-size:20px;line-height:1}
+.gp-label{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:#c5453d}
+.gp-panel.a-ink .gp-label{color:#2f3c7e}.gp-panel.a-sage .gp-label{color:#3f5a48}.gp-panel.a-gold .gp-label{color:#b08800}
+.gp-txt{font-size:16px;line-height:1.55}
+.gp-build{background:#fff8db;border:1px solid #e7cf72;border-left:5px solid #b08800;border-radius:12px;padding:18px;margin-bottom:14px}
+.gp-build .gp-label{color:#8a6a00;font-size:12px}
+.gp-build .gp-txt{font-size:17px;font-weight:600}
+.gp-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.gp-chip{font-family:"JetBrains Mono",monospace;font-size:12px;background:#f0ece1;border:1px solid rgba(28,33,81,.14);border-radius:999px;padding:6px 11px;color:#2f3c7e}
+.gp-next{background:linear-gradient(135deg,#f96167,#c5453d);color:#fff;border-radius:12px;padding:18px 20px;margin-bottom:18px}
+.gp-next .gp-label{color:#f9e795}
+.gp-next .gp-txt{font-size:17px;font-weight:600}
+.gp-hype{text-align:center;font-family:"Caveat",cursive;font-size:clamp(24px,5vw,34px);color:#c5453d;line-height:1.15;margin:6px 6px 16px}
+.gp-foot{text-align:center;font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:rgba(28,33,81,.5);padding-top:6px;border-top:1px dashed rgba(28,33,81,.15)}
+.gp-flag{font-size:13px}
+@media print{.gp{padding:0}.gp-card{box-shadow:none;border:none}}
+</style>`;
+  }
+
+  function planCardHTML(plan, name) {
+    const esc = escapeHtml;
+    const panel = (ico, label, accent, text) => text
+      ? `<div class="gp-panel ${accent}"><div class="gp-h"><span class="gp-ico">${ico}</span><span class="gp-label">${esc(label)}</span></div><div class="gp-txt">${esc(text)}</div></div>`
+      : '';
+    const by = name ? `Designed by ${esc(name)}` : 'A Code Club Wales game';
+    const chips = (plan.notInV1 || []).map((x) => `<span class="gp-chip">${esc(x)}</span>`).join('');
+    return `<div class="gp"><div class="gp-card">
+  <div class="gp-hero">
+    <div class="gp-kicker">✦ Game Plan · Code Club Wales ✦</div>
+    <h1 class="gp-title">${esc(plan.gameName)}</h1>
+    ${plan.tagline ? `<div class="gp-tag">${esc(plan.tagline)}</div>` : ''}
+    <div class="gp-by">${by} · ${esc(prettyDate())}</div>
+  </div>
+  <div class="gp-body">
+    ${panel('🎮', 'The big idea', 'a-ink', plan.bigIdea)}
+    ${panel('🔁', 'Core loop', 'a-coral', plan.coreLoop)}
+    ${panel('🔘', 'The one main action', 'a-sage', plan.mainAction)}
+    ${panel('🏆', 'How you win', 'a-gold', plan.howYouWin)}
+    ${plan.v1 ? `<div class="gp-build"><div class="gp-h"><span class="gp-ico">🧱</span><span class="gp-label">Build this first (v1)</span></div><div class="gp-txt">${esc(plan.v1)}</div></div>` : ''}
+    ${chips ? `<div class="gp-panel a-ink"><div class="gp-h"><span class="gp-ico">🧊</span><span class="gp-label">Saved for later</span></div><div class="gp-chips">${chips}</div></div>` : ''}
+    ${plan.nextStep ? `<div class="gp-next"><div class="gp-h"><span class="gp-ico">🚀</span><span class="gp-label">Your next step</span></div><div class="gp-txt">${esc(plan.nextStep)}</div></div>` : ''}
+    ${plan.hypeLine ? `<div class="gp-hype">${esc(plan.hypeLine)}</div>` : ''}
+    <div class="gp-foot"><span class="gp-flag">🏴󠁧󠁢󠁷󠁬󠁳󠁿</span> Made at Code Club Wales</div>
+  </div>
+</div></div>`;
+  }
+
+  function planInnerHTML() {
+    if (state.plan) return planStyles() + planCardHTML(state.plan, state.name);
+    // fallback: model didn't return clean JSON — show the raw write-up
+    return planStyles() + `<div class="gp"><div class="gp-card"><div class="gp-body">${renderMarkdown(state.planRaw || '')}</div></div></div>`;
+  }
+
+  function renderPlanInline() {
+    $('specBody').innerHTML = planInnerHTML();
+  }
+
+  function planFileSlug() {
+    const base = (state.plan && state.plan.gameName) || state.name || 'game-plan';
+    return base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'game-plan';
+  }
+
+  function buildStandaloneHTML() {
+    const title = (state.plan && state.plan.gameName) ? state.plan.gameName + ' — Game Plan' : 'My Game Plan';
+    return `<!doctype html><html lang="en"><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>${escapeHtml(title)}</title>
+${planStyles()}
+<style>body{margin:0;background:#faf7f0;background-image:radial-gradient(circle at 88% 6%,rgba(249,97,103,.08),transparent 40%),radial-gradient(circle at 10% 92%,rgba(47,60,126,.08),transparent 40%);padding:28px 12px}</style>
+</head><body>${state.plan ? planCardHTML(state.plan, state.name) : `<div class="gp"><div class="gp-card"><div class="gp-body">${renderMarkdown(state.planRaw || '')}</div></div></div>`}</body></html>`;
+  }
+
+  function downloadPlan() {
+    const blob = new Blob([buildStandaloneHTML()], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = planFileSlug() + '-game-plan.html';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  function printPlan() {
+    const w = window.open('', '_blank');
+    if (!w) { alert('Allow pop-ups to print, or use Download instead.'); return; }
+    w.document.write(buildStandaloneHTML());
+    w.document.close();
+    const go = () => { try { w.focus(); w.print(); } catch (e) {} };
+    w.onload = go;
+    setTimeout(go, 600);
+  }
+
+  // ---- API ----
+  async function callGrill(mode) {
+    const res = await fetch('/api/grill', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ mode, context: { name: state.name, qa: state.qa }, messages: state.messages })
+    });
+    if (res.status === 401) {
+      location.href = '/login?next=' + encodeURIComponent(location.pathname);
+      throw new Error('Please sign in to use the coach.');
+    }
+    if (!res.ok) {
+      let msg = 'Something went wrong. Try again.';
+      try { const j = await res.json(); if (j.error) msg = j.error; } catch (e) {}
+      throw new Error(msg);
+    }
+    const data = await res.json();
+    return (data.text || '').trim();
+  }
+
+  let busy = false;
+  function setBusy(on) {
+    busy = on;
+    $('sendBtn').disabled = on;
+    $('finishBtn').disabled = on;
+    showTyping(on);
+  }
+
+  async function coachOpening() {
+    setBusy(true);
+    $('chatErr').textContent = '';
+    try {
+      const text = await callGrill('grill');
+      state.messages.push({ role: 'assistant', content: text });
+      saveGrill();
+      addBubble('assistant', text);
+    } catch (e) {
+      $('chatErr').textContent = e.message;
+    } finally { setBusy(false); }
+  }
+
+  async function sendAnswer() {
+    if (busy) return;
+    const input = $('composerInput');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    input.style.height = 'auto';
+    state.messages.push({ role: 'user', content: text });
+    addBubble('user', text);
+    saveGrill();
+    setBusy(true);
+    $('chatErr').textContent = '';
+    try {
+      const reply = await callGrill('grill');
+      state.messages.push({ role: 'assistant', content: reply });
+      saveGrill();
+      addBubble('assistant', reply);
+    } catch (e) {
+      $('chatErr').textContent = e.message;
+    } finally { setBusy(false); }
+  }
+
+  async function finishSession() {
+    if (busy) return;
+    if (state.messages.length < 2) {
+      $('chatErr').textContent = 'Answer a few questions first, then I can write your plan.';
+      return;
+    }
+    setBusy(true);
+    $('chatErr').textContent = '';
+    try {
+      const raw = await callGrill('summary');
+      state.planRaw = raw;
+      try { state.plan = parsePlan(raw); } catch (e) { state.plan = null; }
+      saveGrill();
+      renderPlanInline();
+      show('spec');
+    } catch (e) {
+      $('chatErr').textContent = e.message;
+    } finally { setBusy(false); }
+  }
+
+  function beginChat() {
+    show('chat');
+    $('chatWho').innerHTML = state.name ? `Grilling <b>${escapeHtml(state.name)}</b>` : 'Grilling session';
+    renderChat();
+    if (state.messages.length === 0) coachOpening();
+  }
+
+  // ---- wire up ----
+  $('startSavedBtn').addEventListener('click', () => { saveGrill(); beginChat(); });
+  $('notMineBtn').addEventListener('click', () => show('intakePaste'));
+
+  $('startPasteBtn').addEventListener('click', () => {
+    const name = $('pasteName').value.trim();
+    const raw = $('pasteBox').value.trim();
+    if (!raw) { $('pasteBox').focus(); return; }
+    let qa = [];
+    let parsedName = name;
+    try {
+      const data = JSON.parse(raw);
+      const answers = Array.isArray(data.answers) ? data.answers : [];
+      qa = answers
+        .filter((a) => a && String(a.answer || '').trim())
+        .map((a) => ({ q: QTEXT[a.questionId] || 'My answer', a: String(a.answer).trim() }));
+      if (!parsedName && data.name) parsedName = String(data.name).trim();
+    } catch (e) { /* not JSON */ }
+    if (qa.length === 0) qa = [{ q: 'My game idea (in my own words)', a: raw }];
+    state = { name: parsedName, qa, messages: [], plan: null, planRaw: '' };
+    saveGrill();
+    beginChat();
+  });
+
+  $('sendBtn').addEventListener('click', sendAnswer);
+  $('composerInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAnswer(); }
+  });
+  $('composerInput').addEventListener('input', (e) => {
+    const el = e.target;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+  });
+
+  $('finishBtn').addEventListener('click', finishSession);
+  $('backToChatBtn').addEventListener('click', () => show('chat'));
+  $('reviewAnswersBtn').addEventListener('click', () => {
+    const lines = state.qa.map((p) => `• ${p.q}\n   ${p.a}`).join('\n\n');
+    alert(state.qa.length ? lines : 'No card answers loaded.');
+  });
+  $('downloadPlanBtn').addEventListener('click', downloadPlan);
+  $('printPlanBtn').addEventListener('click', printPlan);
+  $('restartBtn').addEventListener('click', () => {
+    if (!confirm('Start over? This clears this grilling session (your card answers are safe).')) return;
+    try { localStorage.removeItem(GRILL_KEY); } catch (e) {}
+    init();
+  });
+
+  function init() {
+    const saved = loadGrill();
+    if (saved && (saved.messages.length > 0 || saved.plan || saved.planRaw)) {
+      state = saved;
+      if (state.plan || state.planRaw) {
+        // they already finished — show the game plan, with chat one click away
+        renderPlanInline();
+        $('chatWho').innerHTML = state.name ? `Grilling <b>${escapeHtml(state.name)}</b>` : 'Grilling session';
+        renderChat();
+        show('spec');
+      } else {
+        beginChat();
+      }
+      return;
+    }
+    const cards = loadCards();
+    if (cards && cards.qa.length > 0) {
+      state = { name: cards.name, qa: cards.qa, messages: [], plan: null, planRaw: '' };
+      renderRecap();
+      show('intakeSaved');
+    } else {
+      show('intakePaste');
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
