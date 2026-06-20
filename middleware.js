@@ -6,32 +6,34 @@
 // automatically with no per-page code (the Next.js-middleware "protect a set of
 // routes" pattern, on a non-Next static site).
 //
-// NOTE: we deliberately do NOT import `better-auth` here — its cookie helper
-// pulls in DB/JSON utilities that the Edge runtime rejects ("unsupported
-// modules"). All this check needs is the PRESENCE of the signed session cookie,
-// so we read it straight off the request. Better Auth names the session cookie:
-//   better-auth.session_token            (http / localhost)
-//   __Secure-better-auth.session_token   (https / production — secure prefix)
-// Matching any cookie whose name ends in `session_token` covers both.
+// NOTE: we deliberately do NOT import `better-auth` (or our own crypto helpers)
+// here — heavier modules pull in DB/JSON utilities that the Edge runtime rejects
+// ("unsupported modules"). All this check needs is the PRESENCE of a sign-in
+// cookie, so we read it straight off the request. Two cookies count as signed in:
+//   better-auth.session_token / __Secure-better-auth.session_token
+//                                        (magic-link session — http / https)
+//   cc_access                            (this week's quick code — see api/access.js)
+// Matching any cookie whose name ends in `session_token` covers the first pair.
 //
 // This is an OPTIMISTIC check (no signature/DB verification) — kept cheap on
 // purpose. The authoritative check still happens server-side: every data
-// endpoint a lesson calls (e.g. /api/grill) validates the session and 401s.
+// endpoint a lesson calls (e.g. /api/grill) validates the session OR re-verifies
+// the quick-code cookie's signature + expiry and 401s if it doesn't hold up.
 
 export const config = {
   matcher: ['/lessons/:path*'],
 };
 
 const SESSION_COOKIE_RE = /(?:^|;\s*)[^=;\s]*session_token=([^;]+)/;
+const ACCESS_COOKIE_RE = /(?:^|;\s*)cc_access=([^;]+)/;
 
-function hasSessionCookie(request) {
+function isSignedIn(request) {
   const cookieHeader = request.headers.get('cookie') || '';
-  const match = cookieHeader.match(SESSION_COOKIE_RE);
-  return !!(match && match[1]);
+  return SESSION_COOKIE_RE.test(cookieHeader) || ACCESS_COOKIE_RE.test(cookieHeader);
 }
 
 export default function middleware(request) {
-  if (!hasSessionCookie(request)) {
+  if (!isSignedIn(request)) {
     const { pathname } = new URL(request.url);
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('next', pathname);

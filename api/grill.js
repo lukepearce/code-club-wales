@@ -17,12 +17,14 @@
 //     messages: [{ role: "user" | "assistant", content: string }] }
 // Response: { text: string }  (or { error: string } with a non-200 status)
 //
-// AUTH: this endpoint is gated. The caller must have a valid Better Auth
-// session (an allow-listed Crew member signed in via magic link). Unauthenticated
-// requests get 401 so the lesson page can bounce them to /login.
+// AUTH: this endpoint is gated. The caller must EITHER hold this week's quick-code
+// cookie (api/access.js) OR have a valid Better Auth session (an allow-listed
+// Crew member signed in via magic link). Unauthenticated requests get 401 so the
+// lesson page can bounce them to /login.
 
 import { fromNodeHeaders } from 'better-auth/node';
 import { auth } from '../lib/auth.js';
+import { verifyToken, readCookie, ACCESS_COOKIE } from '../lib/access-code.js';
 
 const MAX_MESSAGES = 60;   // keep the transcript bounded
 const MAX_CHARS = 6000;    // per message
@@ -94,17 +96,23 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Gate: require a signed-in, allow-listed Crew member.
-  try {
-    const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
-    if (!session?.user) {
+  // Gate: accept this week's quick-code cookie OR a signed-in Crew member.
+  // The code cookie is checked first because it's self-verifying (signature +
+  // expiry, no database round-trip), so the coach keeps working even if the
+  // email/DB sign-in path is having a bad day.
+  const codeOk = verifyToken(readCookie(req.headers.cookie, ACCESS_COOKIE));
+  if (!codeOk) {
+    try {
+      const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+      if (!session?.user) {
+        res.status(401).json({ error: 'Please sign in to use the coach.', code: 'UNAUTHENTICATED' });
+        return;
+      }
+    } catch (err) {
+      console.error('grill auth check failed:', err);
       res.status(401).json({ error: 'Please sign in to use the coach.', code: 'UNAUTHENTICATED' });
       return;
     }
-  } catch (err) {
-    console.error('grill auth check failed:', err);
-    res.status(401).json({ error: 'Please sign in to use the coach.', code: 'UNAUTHENTICATED' });
-    return;
   }
 
   if (!API_KEY) {
