@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign in · Code Club Wales</title>
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏴󠁧󠁢󠁷󠁬󠁳󠁿</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..900&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #1c2151; --ink-2: #2f3c7e;
+      --coral: #f96167; --coral-deep: #c5453d;
+      --gold: #f9e795; --sage: #5a7d65;
+      --paper: #faf7f0; --paper-2: #f0ece1;
+      --line: rgba(28, 33, 81, 0.12);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px;
+      font-family: "Manrope", system-ui, sans-serif; background: var(--paper); color: var(--ink); line-height: 1.55;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    }
+    .card {
+      width: 100%; max-width: 420px; background: #fff; border: 1px solid var(--line);
+      border-radius: 14px; padding: 32px; box-shadow: 0 10px 30px rgba(28,33,81,0.06);
+    }
+    .logo { font-family: "Fraunces", serif; font-style: italic; font-weight: 600; font-size: 20px; margin: 0 0 4px; }
+    .logo .flag { margin-right: 6px; }
+    .eyebrow { font-family: "JetBrains Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--coral-deep); margin: 0 0 18px; }
+    h1 { font-family: "Fraunces", serif; font-size: 26px; margin: 0 0 8px; letter-spacing: -0.01em; }
+    p.sub { margin: 0 0 22px; color: var(--ink-2); }
+    label { display: block; font-size: 13px; font-weight: 600; margin: 0 0 6px; }
+    input[type=email] {
+      width: 100%; padding: 12px 14px; font-size: 16px; font-family: inherit;
+      border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink);
+    }
+    input[type=email]:focus { outline: 2px solid var(--coral); outline-offset: 1px; }
+    button {
+      margin-top: 16px; width: 100%; padding: 13px 16px; font-size: 15px; font-weight: 700; font-family: inherit;
+      color: #fff; background: var(--coral); border: 0; border-radius: 10px; cursor: pointer; transition: background .15s;
+    }
+    button:hover:not(:disabled) { background: var(--coral-deep); }
+    button:disabled { opacity: .6; cursor: default; }
+    .msg { margin-top: 16px; padding: 12px 14px; border-radius: 10px; font-size: 14px; display: none; }
+    .msg.ok { display: block; background: #eef5ef; color: var(--sage); border: 1px solid rgba(90,125,101,.3); }
+    .msg.err { display: block; background: #fdeeee; color: var(--coral-deep); border: 1px solid rgba(197,69,61,.3); }
+    .foot { margin-top: 18px; font-size: 13px; color: var(--ink-2); }
+    .foot a { color: var(--coral-deep); }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <p class="logo"><span class="flag">🏴󠁧󠁢󠁷󠁬󠁳󠁿</span>Code Club Wales</p>
+    <p class="eyebrow">Crew sign-in</p>
+    <h1>Sign in</h1>
+    <p class="sub">Enter your email and we'll send you a one-time sign-in link. No password to remember.</p>
+
+    <form id="form">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="email" required placeholder="you@example.com" />
+      <button id="btn" type="submit">Send my sign-in link</button>
+    </form>
+
+    <div id="msg" class="msg"></div>
+    <p class="foot">Only Crew members on the club list can sign in. Not on the list? <a href="/">Ask the organiser.</a></p>
+  </main>
+
+  <script>
+    const form = document.getElementById('form');
+    const btn = document.getElementById('btn');
+    const msg = document.getElementById('msg');
+    // Where to land after sign-in — respects ?next=/some/path, defaults to home.
+    const params = new URLSearchParams(location.search);
+    const next = params.get('next') || '/';
+    const callbackURL = next.startsWith('/') ? next : '/';
+
+    function show(kind, text) { msg.className = 'msg ' + kind; msg.textContent = text; }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      if (!email) return;
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+      try {
+        const res = await fetch('/api/auth/sign-in/magic-link', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email, callbackURL }),
+        });
+        if (res.ok) {
+          show('ok', "Check your email — we've sent a sign-in link. It works once and expires in 15 minutes.");
+          form.querySelector('input').disabled = true;
+          btn.textContent = 'Link sent';
+        } else {
+          let detail = '';
+          try { detail = (await res.json())?.message || ''; } catch {}
+          show('err', detail || "We couldn't send a link to that email. Double-check it and try again.");
+          btn.disabled = false;
+          btn.textContent = 'Send my sign-in link';
+        }
+      } catch {
+        show('err', 'Something went wrong reaching the server. Try again in a moment.');
+        btn.disabled = false;
+        btn.textContent = 'Send my sign-in link';
+      }
+    });
+  </script>
+</body>
+</html>
