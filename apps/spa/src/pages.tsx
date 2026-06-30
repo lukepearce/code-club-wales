@@ -1,8 +1,16 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { type FormEvent, useState } from 'react';
 import { authClient } from './lib/auth-client';
-import { requestJoin } from './lib/api';
+import {
+  admitMember,
+  fetchOrganiserMembers,
+  ORGANISER_MEMBERS_QUERY_KEY,
+  OrganiserForbiddenError,
+  rejectMember,
+  requestJoin,
+  type OrganiserMember,
+} from './lib/api';
 
 /**
  * /join — request a Crew account. Username + password (+ optional email). The
@@ -171,6 +179,133 @@ export function DashboardPage() {
       <button type="button" onClick={onSignOut}>
         Sign out
       </button>
+    </section>
+  );
+}
+
+function memberLabel(member: OrganiserMember): string {
+  return member.displayUsername ?? member.username ?? member.displayName;
+}
+
+/**
+ * /organiser — the Organiser area. Lists the pending queue and the active
+ * members, with admit/reject controls. The route's beforeLoad redirects any
+ * non-Organiser away; should one still reach here (e.g. a transient), the API
+ * answers 403 and we render an "Organisers only" panel instead of controls.
+ */
+export function OrganiserPage() {
+  const queryClient = useQueryClient();
+  const membersQuery = useQuery({
+    queryKey: ORGANISER_MEMBERS_QUERY_KEY,
+    queryFn: fetchOrganiserMembers,
+    retry: false,
+  });
+
+  const refresh = () =>
+    queryClient.invalidateQueries({ queryKey: ORGANISER_MEMBERS_QUERY_KEY });
+  const admit = useMutation({ mutationFn: admitMember, onSuccess: refresh });
+  const reject = useMutation({ mutationFn: rejectMember, onSuccess: refresh });
+  const busy = admit.isPending || reject.isPending;
+
+  if (membersQuery.isPending) {
+    return (
+      <section>
+        <h1>Organiser</h1>
+        <p>Loading members…</p>
+      </section>
+    );
+  }
+
+  if (membersQuery.error) {
+    if (membersQuery.error instanceof OrganiserForbiddenError) {
+      return (
+        <section>
+          <h1>Organiser</h1>
+          <p>This area is for Organisers only.</p>
+        </section>
+      );
+    }
+    return (
+      <section>
+        <h1>Organiser</h1>
+        <p>Could not load members. Please try again.</p>
+      </section>
+    );
+  }
+
+  const members = membersQuery.data;
+  const pending = members.filter((m) => m.status === 'pending');
+  const active = members.filter((m) => m.status === 'active');
+  const actionError = admit.error ?? reject.error;
+
+  return (
+    <section className="organiser">
+      <h1>Organiser</h1>
+      <p>Admit people who have requested to join, or reject a request to free the username.</p>
+
+      {actionError && (
+        <div className="form-error" role="alert">
+          <p>{actionError.message}</p>
+        </div>
+      )}
+
+      <h2>Pending requests ({pending.length})</h2>
+      {pending.length === 0 ? (
+        <p>No one is waiting to be admitted.</p>
+      ) : (
+        <ul className="member-list">
+          {pending.map((member) => (
+            <li key={member.userId} className="member-row">
+              <span className="member-name">
+                <strong>{memberLabel(member)}</strong>
+              </span>
+              <div className="member-actions">
+                <button type="button" disabled={busy} onClick={() => admit.mutate(member.userId)}>
+                  Admit
+                </button>
+                <button
+                  type="button"
+                  className="danger"
+                  disabled={busy}
+                  onClick={() => reject.mutate(member.userId)}
+                >
+                  Reject
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <h2>Active members ({active.length})</h2>
+      {active.length === 0 ? (
+        <p>No active members yet.</p>
+      ) : (
+        <ul className="member-list">
+          {active.map((member) => (
+            <li key={member.userId} className="member-row">
+              <span className="member-name">
+                <strong>{memberLabel(member)}</strong>
+                {member.isOrganiser && <span className="badge">Organiser</span>}
+              </span>
+              <div className="member-actions">
+                {member.isOrganiser ? (
+                  <span className="muted">—</span>
+                ) : (
+                  <button
+                    type="button"
+                    className="danger"
+                    disabled={busy}
+                    onClick={() => reject.mutate(member.userId)}
+                  >
+                    Reject
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

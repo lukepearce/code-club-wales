@@ -2,10 +2,14 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { z } from 'zod';
 import type { Auth } from './auth';
+import type { Database } from './db/client';
 import type { JoinInput, JoinResult } from './join';
+import { createOrganiserApp } from './organiser';
 
 export interface AppConfig {
   auth: Auth;
+  /** The pooled db. Used by the Organiser routes to read/gate crew_member rows. */
+  db: Database;
   /** Allowed browser origins (the SPA). Echoed back for credentialed CORS. */
   trustedOrigins: string[];
   /** The join coordinator, bound to the db + auth factory by the caller. */
@@ -82,6 +86,10 @@ export function createApp(config: AppConfig) {
         return c.json({ ok: false, error: 'unknown', message: result.message }, 500);
     }
   });
+
+  // Organiser-only surface: list / admit / reject members. Each route is gated
+  // by the Organiser check inside createOrganiserApp (403 for non-Organisers).
+  app.route('/api/organiser', createOrganiserApp({ auth: config.auth, db: config.db }));
 
   // Better Auth owns sign-in / sign-out / get-session / Google callback / etc.
   app.on(['GET', 'POST'], '/api/auth/*', (c) => config.auth.handler(c.req.raw));

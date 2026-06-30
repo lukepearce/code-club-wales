@@ -30,8 +30,10 @@ async function main(): Promise<void> {
 
   const app = createApp({
     auth,
+    db,
     trustedOrigins: env.trustedOrigins,
-    joinCrew: (input: JoinInput) => joinCrew({ db, makeAuth }, input),
+    joinCrew: (input: JoinInput) =>
+      joinCrew({ db, makeAuth, organiserUsernames: env.organiserUsernames }, input),
   });
 
   serve({ fetch: app.fetch, port: env.port }, (info) => {

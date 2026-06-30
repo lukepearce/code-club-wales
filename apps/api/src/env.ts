@@ -17,7 +17,8 @@ const RawEnv = z.object({
   COOKIE_DOMAIN: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().default(''),
   GOOGLE_CLIENT_SECRET: z.string().default(''),
-  // Comma-separated usernames bootstrapped as Organisers (used by later slices).
+  // Comma-separated usernames bootstrapped as Organisers at join (auto-flagged
+  // is_organiser and auto-admitted). Consumed by the join coordinator.
   ORGANISER_USERNAMES: z.string().default(''),
 });
 

@@ -23,14 +23,26 @@ export interface TestHarness {
   request: (input: string, init?: RequestInit) => Promise<Response>;
   /** Call the join coordinator directly (bypasses HTTP) for unit-ish setup. */
   join: (input: JoinInput) => Promise<JoinResult>;
-  /** Grant Admission to a member by username (the Organiser UI is a later slice). */
+  /** Grant Admission to a member by username (direct DB flip, for test setup). */
   admitByUsername: (username: string) => Promise<void>;
+  /** Resolve a Better Auth user id from a username (for route params in tests). */
+  userIdByUsername: (username: string) => Promise<string>;
   /** Raw connection string, e.g. for opening a second client in a test. */
   connectionString: string;
   /** The started Testcontainers Postgres container. */
   container: StartedPostgreSqlContainer;
   /** Close the pool and stop the container. Call in afterAll. */
   teardown: () => Promise<void>;
+}
+
+/** Per-file overrides for the harness. */
+export interface TestHarnessOptions {
+  /**
+   * Usernames bootstrapped as Organisers (the `ORGANISER_USERNAMES` list). A
+   * join with a matching username is auto-flagged + auto-admitted. Defaults to
+   * empty, so by default no join becomes an Organiser.
+   */
+  organiserUsernames?: readonly string[];
 }
 
 /**
@@ -41,9 +53,12 @@ export interface TestHarness {
  *   const h = await setupTestApp();
  *   afterAll(() => h.teardown());
  *
- * Boots a fresh container per call, so each test file is fully isolated.
+ * Boots a fresh container per call, so each test file is fully isolated. Pass
+ * `organiserUsernames` to exercise the Organiser bootstrap.
  */
-export async function setupTestApp(): Promise<TestHarness> {
+export async function setupTestApp(options: TestHarnessOptions = {}): Promise<TestHarness> {
+  const organiserUsernames = options.organiserUsernames ?? [];
+
   const container = await new PostgreSqlContainer(POSTGRES_IMAGE).start();
   const connectionString = container.getConnectionUri();
 
@@ -61,9 +76,10 @@ export async function setupTestApp(): Promise<TestHarness> {
 
   const auth = makeAuth(db);
 
-  const join = (input: JoinInput): Promise<JoinResult> => joinCrew({ db, makeAuth }, input);
+  const join = (input: JoinInput): Promise<JoinResult> =>
+    joinCrew({ db, makeAuth, organiserUsernames }, input);
 
-  const app = createApp({ auth, trustedOrigins: TEST_TRUSTED_ORIGINS, joinCrew: join });
+  const app = createApp({ auth, db, trustedOrigins: TEST_TRUSTED_ORIGINS, joinCrew: join });
 
   const request = (input: string, init?: RequestInit): Promise<Response> =>
     Promise.resolve(app.request(input, init));
@@ -84,6 +100,19 @@ export async function setupTestApp(): Promise<TestHarness> {
       .where(eq(crewMember.user_id, found.id));
   };
 
+  const userIdByUsername = async (username: string): Promise<string> => {
+    const rows = await db
+      .select({ id: userTable.id })
+      .from(userTable)
+      .where(eq(userTable.username, username))
+      .limit(1);
+    const found = rows[0];
+    if (!found) {
+      throw new Error(`userIdByUsername: no user with username "${username}"`);
+    }
+    return found.id;
+  };
+
   const teardown = async (): Promise<void> => {
     await pool.end();
     await container.stop();
@@ -96,6 +125,7 @@ export async function setupTestApp(): Promise<TestHarness> {
     request,
     join,
     admitByUsername,
+    userIdByUsername,
     connectionString,
     container,
     teardown,

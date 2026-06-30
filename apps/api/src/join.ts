@@ -1,4 +1,4 @@
-import { forUsername, validate as validateUsername } from '@codeclub/shared';
+import { bootstrap, forUsername, validate as validateUsername } from '@codeclub/shared';
 import { APIError } from 'better-auth/api';
 import { eq } from 'drizzle-orm';
 import type { Auth } from './auth';
@@ -44,6 +44,13 @@ export interface JoinDeps {
   db: Database;
   /** Build a Better Auth instance bound to a given db/transaction handle. */
   makeAuth: (db: DbOrTx) => Auth;
+  /**
+   * Usernames pre-configured as Organisers (the `ORGANISER_USERNAMES` list). A
+   * joining username that matches (after normalisation) is bootstrapped by the
+   * shared organiserPolicy: flagged `is_organiser` AND admitted on the spot, in
+   * the same transaction as the rest of the join.
+   */
+  organiserUsernames: readonly string[];
 }
 
 /** Internal control-flow signal: abort the transaction with a typed result. */
@@ -103,11 +110,18 @@ export async function joinCrew(deps: JoinDeps, input: JoinInput): Promise<JoinRe
         body: { username, email, password: input.password, name: username },
       });
 
-      // The domain row, PENDING by default (admitted_at null). display_name
-      // defaults from the username.
+      // Organiser bootstrap (pure policy). A configured Organiser username is
+      // flagged AND admitted on the spot; everyone else is a PENDING, non-
+      // Organiser member (is_organiser false, admitted_at null) awaiting
+      // Admission. Both writes land inside this one transaction.
+      const decision = bootstrap(username, deps.organiserUsernames);
+
+      // The domain row. display_name defaults from the username.
       await tx.insert(crewMember).values({
         user_id: created.id,
         display_name: username,
+        is_organiser: decision.is_organiser,
+        admitted_at: decision.admit ? new Date() : null,
       });
 
       return created.id;

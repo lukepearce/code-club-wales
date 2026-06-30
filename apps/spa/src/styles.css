@@ -76,3 +76,59 @@ body {
 .form-error p {
   margin: 0;
 }
+
+.organiser {
+  max-width: 36rem;
+}
+
+.member-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.member-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.member-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.member-actions button {
+  padding: 0.35rem 0.7rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.member-actions button.danger {
+  color: #b00020;
+  border-color: #f5c2c7;
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: #e8f0fe;
+  color: #1a56db;
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.4rem;
+}
+
+.muted {
+  color: #999;
+}

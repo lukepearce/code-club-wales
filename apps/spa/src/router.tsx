@@ -7,9 +7,14 @@ import {
   Outlet,
   redirect,
 } from '@tanstack/react-router';
+import {
+  fetchOrganiserMembers,
+  ORGANISER_MEMBERS_QUERY_KEY,
+  OrganiserForbiddenError,
+} from './lib/api';
 import { authClient, type AuthClient } from './lib/auth-client';
 import { queryClient } from './lib/query';
-import { DashboardPage, JoinPage, SignInPage } from './pages';
+import { DashboardPage, JoinPage, OrganiserPage, SignInPage } from './pages';
 
 export interface RouterContext {
   auth: AuthClient;
@@ -25,6 +30,29 @@ async function requireSession({ context }: { context: RouterContext }): Promise<
   const session = await context.auth.getSession();
   if (!session.data) {
     throw redirect({ to: '/signin' });
+  }
+}
+
+/**
+ * Organiser guard: the authoritative gate is the API (403 to non-Organisers).
+ * Here we make the area unreachable in the SPA too — redirect anonymous callers
+ * to /signin, and signed-in non-Organisers (whom the members fetch refuses with
+ * an OrganiserForbiddenError) to the dashboard. On success we prime the query
+ * cache so the page renders without a second fetch.
+ */
+async function requireOrganiser({ context }: { context: RouterContext }): Promise<void> {
+  const session = await context.auth.getSession();
+  if (!session.data) {
+    throw redirect({ to: '/signin' });
+  }
+  try {
+    const members = await fetchOrganiserMembers();
+    context.queryClient.setQueryData(ORGANISER_MEMBERS_QUERY_KEY, members);
+  } catch (err) {
+    if (err instanceof OrganiserForbiddenError) {
+      throw redirect({ to: '/' });
+    }
+    // Transient/network error: let the page's own query surface it.
   }
 }
 
@@ -83,13 +111,8 @@ const joinRoute = createRoute({
 const organiserRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/organiser',
-  beforeLoad: requireSession,
-  component: () => (
-    <Placeholder
-      title="Organiser"
-      note="Admit / reject pending Crew members, open reset windows. Later slice."
-    />
-  ),
+  beforeLoad: requireOrganiser,
+  component: OrganiserPage,
 });
 
 const resetRoute = createRoute({
