@@ -32,3 +32,47 @@ body {
 .app-main {
   padding: 1.5rem;
 }
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 22rem;
+}
+
+.stack label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-weight: 600;
+}
+
+.stack input {
+  padding: 0.5rem;
+  font: inherit;
+  border: 1px solid #ccc;
+  border-radius: 0.25rem;
+}
+
+.stack button {
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.form-error {
+  color: #b00020;
+  background: #fde7ea;
+  border: 1px solid #f5c2c7;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.form-error ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.form-error p {
+  margin: 0;
+}

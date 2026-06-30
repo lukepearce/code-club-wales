@@ -1,9 +1,10 @@
 import { serve } from '@hono/node-server';
 import { createApp } from './app';
 import { createAuth } from './auth';
-import { createDb } from './db/client';
+import { createDb, type DbOrTx } from './db/client';
 import { applyMigrations } from './db/migrate';
 import { loadEnv } from './env';
+import { joinCrew, type JoinInput } from './join';
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -12,16 +13,26 @@ async function main(): Promise<void> {
   // Migrations run as a startup hook (Railway container) before serving.
   await applyMigrations(db);
 
-  const auth = createAuth({
-    db,
-    secret: env.betterAuthSecret,
-    baseURL: env.betterAuthUrl,
-    trustedOrigins: env.trustedOrigins,
-    cookieDomain: env.cookieDomain,
-    google: env.google,
-  });
+  // One auth-config builder, reused for the pooled instance and for the
+  // transaction-bound instance the join coordinator needs (so signUp + the
+  // crew_member insert share a transaction).
+  const makeAuth = (database: DbOrTx) =>
+    createAuth({
+      db: database,
+      secret: env.betterAuthSecret,
+      baseURL: env.betterAuthUrl,
+      trustedOrigins: env.trustedOrigins,
+      cookieDomain: env.cookieDomain,
+      google: env.google,
+    });
 
-  const app = createApp({ auth, trustedOrigins: env.trustedOrigins });
+  const auth = makeAuth(db);
+
+  const app = createApp({
+    auth,
+    trustedOrigins: env.trustedOrigins,
+    joinCrew: (input: JoinInput) => joinCrew({ db, makeAuth }, input),
+  });
 
   serve({ fetch: app.fetch, port: env.port }, (info) => {
     console.log(`[api] listening on http://localhost:${info.port}`);

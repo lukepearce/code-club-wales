@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-router';
 import { authClient, type AuthClient } from './lib/auth-client';
 import { queryClient } from './lib/query';
+import { DashboardPage, JoinPage, SignInPage } from './pages';
 
 export interface RouterContext {
   auth: AuthClient;
@@ -64,25 +65,19 @@ const dashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   beforeLoad: requireSession,
-  component: () => (
-    <Placeholder title="Dashboard" note="Gated Crew member dashboard (lessons + AI coach land here)." />
-  ),
+  component: DashboardPage,
 });
 
 const signinRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/signin',
-  component: () => (
-    <Placeholder title="Sign in" note="Username + password (or Google once linked). Built in a later slice." />
-  ),
+  component: SignInPage,
 });
 
 const joinRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/join',
-  component: () => (
-    <Placeholder title="Request to join" note="Username + password (+ optional email), Turnstile-gated. Inert until Admission." />
-  ),
+  component: JoinPage,
 });
 
 const organiserRoute = createRoute({
@@ -90,7 +85,10 @@ const organiserRoute = createRoute({
   path: '/organiser',
   beforeLoad: requireSession,
   component: () => (
-    <Placeholder title="Organiser" note="Admit / reject pending Crew members, open reset windows. Later slice." />
+    <Placeholder
+      title="Organiser"
+      note="Admit / reject pending Crew members, open reset windows. Later slice."
+    />
   ),
 });
 
@@ -98,7 +96,10 @@ const resetRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/reset',
   component: () => (
-    <Placeholder title="Reset password" note="Public, keyed by username, gated by the Organiser-opened window. Later slice." />
+    <Placeholder
+      title="Reset password"
+      note="Public, keyed by username, gated by the Organiser-opened window. Later slice."
+    />
   ),
 });
 
@@ -107,7 +108,10 @@ const accountRoute = createRoute({
   path: '/account',
   beforeLoad: requireSession,
   component: () => (
-    <Placeholder title="Account" note="Set email, link Google, claim a personal-site slug. Later slice." />
+    <Placeholder
+      title="Account"
+      note="Set email, link Google, claim a personal-site slug. Later slice."
+    />
   ),
 });
 
