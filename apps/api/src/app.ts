@@ -5,6 +5,7 @@ import type { Auth } from './auth';
 import type { Database } from './db/client';
 import type { JoinInput, JoinResult } from './join';
 import { createOrganiserApp } from './organiser';
+import type { ResetInput, ResetResult } from './reset';
 
 export interface AppConfig {
   auth: Auth;
@@ -14,6 +15,8 @@ export interface AppConfig {
   trustedOrigins: string[];
   /** The join coordinator, bound to the db + auth factory by the caller. */
   joinCrew: (input: JoinInput) => Promise<JoinResult>;
+  /** The password-reset coordinator, bound to the db + auth factory by the caller. */
+  resetPassword: (input: ResetInput) => Promise<ResetResult>;
 }
 
 const JoinBody = z.object({
@@ -24,6 +27,11 @@ const JoinBody = z.object({
   // token reaches the coordinator's bot gate (which rejects it) rather than
   // failing as a generic bad request — keeping ALL Turnstile policy in one place.
   turnstileToken: z.string().optional(),
+});
+
+const ResetBody = z.object({
+  username: z.string(),
+  newPassword: z.string(),
 });
 
 /**
@@ -121,8 +129,53 @@ export function createApp(config: AppConfig) {
     }
   });
 
-  // Organiser-only surface: list / admit / reject members. Each route is gated
-  // by the Organiser check inside createOrganiserApp (403 for non-Organisers).
+  // Public, email-free password reset. A SIGNED-OUT member sets their OWN new
+  // password, keyed by username. Authorised only while the Organiser-opened
+  // window is open (the coordinator enforces it); outside a window we answer 403
+  // with an "ask the Organiser" message. The Organiser never sees this password.
+  app.post('/api/reset', async (c) => {
+    let raw: unknown;
+    try {
+      raw = await c.req.json();
+    } catch {
+      return c.json({ ok: false, error: 'bad_request', message: 'Invalid JSON.' }, 400);
+    }
+    const parsed = ResetBody.safeParse(raw);
+    if (!parsed.success) {
+      return c.json(
+        { ok: false, error: 'bad_request', message: 'username and newPassword are required.' },
+        400,
+      );
+    }
+
+    const result = await config.resetPassword({
+      username: parsed.data.username,
+      newPassword: parsed.data.newPassword,
+    });
+    if (result.ok) {
+      return c.json({ ok: true }, 200);
+    }
+    switch (result.error) {
+      case 'window_closed':
+        return c.json(
+          {
+            ok: false,
+            error: result.error,
+            message:
+              'This reset link is not open. Ask the Organiser to allow a reset, then try again within 5 minutes.',
+          },
+          403,
+        );
+      case 'weak_password':
+        return c.json({ ok: false, error: result.error, message: result.message }, 422);
+      default:
+        return c.json({ ok: false, error: 'unknown', message: result.message }, 500);
+    }
+  });
+
+  // Organiser-only surface: list / admit / reject / allow-reset members. Each
+  // route is gated by the Organiser check inside createOrganiserApp (403 for
+  // non-Organisers).
   app.route('/api/organiser', createOrganiserApp({ auth: config.auth, db: config.db }));
 
   // Better Auth owns sign-in / sign-out / get-session / Google callback / etc.

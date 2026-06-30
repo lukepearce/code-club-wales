@@ -14,7 +14,7 @@ import {
 } from './lib/api';
 import { authClient, type AuthClient } from './lib/auth-client';
 import { queryClient } from './lib/query';
-import { DashboardPage, JoinPage, OrganiserPage, SignInPage } from './pages';
+import { DashboardPage, JoinPage, OrganiserPage, ResetPage, SignInPage } from './pages';
 
 export interface RouterContext {
   auth: AuthClient;
@@ -65,6 +65,7 @@ function RootLayout() {
           <Link to="/">Dashboard</Link>
           <Link to="/join">Join</Link>
           <Link to="/signin">Sign in</Link>
+          <Link to="/reset">Reset</Link>
           <Link to="/organiser">Organiser</Link>
           <Link to="/account">Account</Link>
         </nav>
@@ -115,15 +116,12 @@ const organiserRoute = createRoute({
   component: OrganiserPage,
 });
 
+// Public (no session guard): a signed-out member resets via the Organiser-opened
+// window. The window, enforced server-side, is the gate — not a session.
 const resetRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/reset',
-  component: () => (
-    <Placeholder
-      title="Reset password"
-      note="Public, keyed by username, gated by the Organiser-opened window. Later slice."
-    />
-  ),
+  component: ResetPage,
 });
 
 const accountRoute = createRoute({

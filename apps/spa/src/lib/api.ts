@@ -31,6 +31,33 @@ export async function requestJoin(input: JoinRequest): Promise<JoinResponse> {
 }
 
 // ---------------------------------------------------------------------------
+// Public, email-free password reset (keyed by username, gated by the
+// Organiser-opened window — the API answers 403 outside a window).
+// ---------------------------------------------------------------------------
+
+export interface ResetRequest {
+  username: string;
+  newPassword: string;
+}
+
+export type ResetResponse = { ok: true } | { ok: false; error: string; message?: string };
+
+/** POST /api/reset. Resolves to the parsed body (never throws on HTTP status). */
+export async function requestPasswordReset(input: ResetRequest): Promise<ResetResponse> {
+  try {
+    const res = await fetch(`${API_URL}/api/reset`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+    return (await res.json()) as ResetResponse;
+  } catch {
+    return { ok: false, error: 'network', message: 'Could not reach the server. Try again.' };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Organiser surface (gated server-side: the API answers 403 to non-Organisers).
 // ---------------------------------------------------------------------------
 
@@ -45,6 +72,8 @@ export interface OrganiserMember {
   admittedAt: string | null;
   createdAt: string;
   status: 'pending' | 'active';
+  /** ISO timestamp the current reset window closes, or null when none is open. */
+  resetAllowedUntil: string | null;
 }
 
 /**
@@ -78,7 +107,10 @@ export async function fetchOrganiserMembers(): Promise<OrganiserMember[]> {
   return body.members;
 }
 
-async function organiserAction(userId: string, action: 'admit' | 'reject'): Promise<void> {
+async function organiserAction(
+  userId: string,
+  action: 'admit' | 'reject' | 'allow-reset',
+): Promise<void> {
   const res = await fetch(
     `${API_URL}/api/organiser/members/${encodeURIComponent(userId)}/${action}`,
     {
@@ -104,4 +136,13 @@ export function admitMember(userId: string): Promise<void> {
 /** POST /api/organiser/members/:id/reject. */
 export function rejectMember(userId: string): Promise<void> {
   return organiserAction(userId, 'reject');
+}
+
+/**
+ * POST /api/organiser/members/:id/allow-reset. Opens a 5-minute password-reset
+ * window for the member. The Organiser only opens it; the member then sets their
+ * own password (signed out) at /reset.
+ */
+export function allowMemberReset(userId: string): Promise<void> {
+  return organiserAction(userId, 'allow-reset');
 }

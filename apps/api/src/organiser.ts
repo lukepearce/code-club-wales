@@ -1,4 +1,4 @@
-import { isOrganiser } from '@codeclub/shared';
+import { isOrganiser, open as openResetWindow } from '@codeclub/shared';
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import type { Auth } from './auth';
@@ -8,11 +8,17 @@ import { crewMember, user as userTable } from './db/schema';
 /**
  * organiser — the Organiser-only surface.
  *
- * Three routes let the person who runs the club review and gate Crew members:
- *   GET    /members                  list everyone (pending + active)
- *   POST   /members/:userId/admit    stamp admitted_at → the member can sign in
- *   POST   /members/:userId/reject   delete the user + crew_member, freeing the
- *                                    username for re-use
+ * Four routes let the person who runs the club review and gate Crew members:
+ *   GET    /members                       list everyone (pending + active)
+ *   POST   /members/:userId/admit         stamp admitted_at → the member can sign in
+ *   POST   /members/:userId/reject        delete the user + crew_member, freeing the
+ *                                         username for re-use
+ *   POST   /members/:userId/allow-reset   open a 5-minute password-reset window
+ *                                         (reset_allowed_until = resetWindow.open(now))
+ *
+ * The Organiser only OPENS the reset window; they never see or set the password.
+ * The signed-out member spends the window themselves at the public /api/reset
+ * endpoint (see reset.ts).
  *
  * Every route sits behind one guard: resolve the caller's Better Auth session,
  * load their crew_member, and consult the shared organiserPolicy.isOrganiser.
@@ -45,6 +51,12 @@ export interface OrganiserMemberView {
   createdAt: string;
   /** Derived: pending until admitted_at is stamped, then active. */
   status: 'pending' | 'active';
+  /**
+   * When the current Organiser-opened password-reset window closes, or null
+   * when none is open. Lets the UI show "reset window open" without itself
+   * judging expiry — a stale (past) value simply reads as a closed window.
+   */
+  resetAllowedUntil: string | null;
 }
 
 export function createOrganiserApp(deps: OrganiserDeps): Hono {
@@ -83,6 +95,7 @@ export function createOrganiserApp(deps: OrganiserDeps): Hono {
         isOrganiser: crewMember.is_organiser,
         admittedAt: crewMember.admitted_at,
         createdAt: crewMember.created_at,
+        resetAllowedUntil: crewMember.reset_allowed_until,
       })
       .from(crewMember)
       .innerJoin(userTable, eq(userTable.id, crewMember.user_id))
@@ -97,6 +110,7 @@ export function createOrganiserApp(deps: OrganiserDeps): Hono {
       admittedAt: r.admittedAt ? r.admittedAt.toISOString() : null,
       createdAt: r.createdAt.toISOString(),
       status: r.admittedAt ? 'active' : 'pending',
+      resetAllowedUntil: r.resetAllowedUntil ? r.resetAllowedUntil.toISOString() : null,
     }));
 
     return c.json({ ok: true, members }, 200);
@@ -159,6 +173,31 @@ export function createOrganiserApp(deps: OrganiserDeps): Hono {
     });
 
     return c.json({ ok: true }, 200);
+  });
+
+  // Open a 5-minute password-reset window for a member. Stamps
+  // reset_allowed_until = resetWindow.open(now) (the pure policy owns the 5-min
+  // duration). This is ALL the Organiser does for a reset: they never see or set
+  // the password — the signed-out member spends the window at /api/reset. There
+  // is no body: opening a window carries no secret. Re-opening simply slides the
+  // window 5 minutes out from now.
+  app.post('/members/:userId/allow-reset', async (c) => {
+    const userId = c.req.param('userId');
+    const rows = await deps.db
+      .select({ user_id: crewMember.user_id })
+      .from(crewMember)
+      .where(eq(crewMember.user_id, userId))
+      .limit(1);
+    if (!rows[0]) {
+      return c.json({ ok: false, error: 'not_found', message: 'No such member.' }, 404);
+    }
+    const now = new Date();
+    const resetAllowedUntil = openResetWindow(now);
+    await deps.db
+      .update(crewMember)
+      .set({ reset_allowed_until: resetAllowedUntil, updated_at: now })
+      .where(eq(crewMember.user_id, userId));
+    return c.json({ ok: true, resetAllowedUntil: resetAllowedUntil.toISOString() }, 200);
   });
 
   return app;

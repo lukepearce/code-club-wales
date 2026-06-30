@@ -7,6 +7,7 @@ import { createDb, type Database, type DbOrTx } from '../src/db/client';
 import { crewMember, user as userTable } from '../src/db/schema';
 import { applyMigrations } from '../src/db/migrate';
 import { joinCrew, type JoinInput, type JoinResult } from '../src/join';
+import { resetPassword, type ResetInput, type ResetResult } from '../src/reset';
 
 // Pinned to Railway's Postgres add-on major.
 const POSTGRES_IMAGE = 'postgres:16';
@@ -50,8 +51,18 @@ export interface TestHarness {
   request: (input: string, init?: RequestInit) => Promise<Response>;
   /** Call the join coordinator directly (bypasses HTTP) for unit-ish setup. */
   join: (input: JoinInput) => Promise<JoinResult>;
+  /** Call the reset coordinator directly (bypasses HTTP) for unit-ish setup. */
+  reset: (input: ResetInput) => Promise<ResetResult>;
   /** Grant Admission to a member by username (direct DB flip, for test setup). */
   admitByUsername: (username: string) => Promise<void>;
+  /**
+   * Stamp (or clear) a member's reset window directly, for test setup. Pass a
+   * past Date to simulate an EXPIRED window, or null to close it. The Organiser
+   * route is the real opener; this lets a test drive the clock by hand.
+   */
+  setResetWindowByUsername: (username: string, until: Date | null) => Promise<void>;
+  /** Read a member's current reset_allowed_until (null when closed). */
+  resetWindowByUsername: (username: string) => Promise<Date | null>;
   /** Resolve a Better Auth user id from a username (for route params in tests). */
   userIdByUsername: (username: string) => Promise<string>;
   /** Raw connection string, e.g. for opening a second client in a test. */
@@ -119,7 +130,15 @@ export async function setupTestApp(options: TestHarnessOptions = {}): Promise<Te
   const join = (input: JoinInput): Promise<JoinResult> =>
     joinCrew({ db, makeAuth, organiserUsernames, turnstile }, input);
 
-  const app = createApp({ auth, db, trustedOrigins: TEST_TRUSTED_ORIGINS, joinCrew: join });
+  const reset = (input: ResetInput): Promise<ResetResult> => resetPassword({ db, makeAuth }, input);
+
+  const app = createApp({
+    auth,
+    db,
+    trustedOrigins: TEST_TRUSTED_ORIGINS,
+    joinCrew: join,
+    resetPassword: reset,
+  });
 
   const request = (input: string, init?: RequestInit): Promise<Response> =>
     Promise.resolve(app.request(input, init));
@@ -153,6 +172,24 @@ export async function setupTestApp(options: TestHarnessOptions = {}): Promise<Te
     return found.id;
   };
 
+  const setResetWindowByUsername = async (username: string, until: Date | null): Promise<void> => {
+    const userId = await userIdByUsername(username);
+    await db
+      .update(crewMember)
+      .set({ reset_allowed_until: until })
+      .where(eq(crewMember.user_id, userId));
+  };
+
+  const resetWindowByUsername = async (username: string): Promise<Date | null> => {
+    const userId = await userIdByUsername(username);
+    const rows = await db
+      .select({ reset_allowed_until: crewMember.reset_allowed_until })
+      .from(crewMember)
+      .where(eq(crewMember.user_id, userId))
+      .limit(1);
+    return rows[0]?.reset_allowed_until ?? null;
+  };
+
   const teardown = async (): Promise<void> => {
     await pool.end();
     await container.stop();
@@ -164,7 +201,10 @@ export async function setupTestApp(options: TestHarnessOptions = {}): Promise<Te
     app,
     request,
     join,
+    reset,
     admitByUsername,
+    setResetWindowByUsername,
+    resetWindowByUsername,
     userIdByUsername,
     connectionString,
     container,

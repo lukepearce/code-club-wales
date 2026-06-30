@@ -4,11 +4,13 @@ import { type FormEvent, useState } from 'react';
 import { authClient } from './lib/auth-client';
 import {
   admitMember,
+  allowMemberReset,
   fetchOrganiserMembers,
   ORGANISER_MEMBERS_QUERY_KEY,
   OrganiserForbiddenError,
   rejectMember,
   requestJoin,
+  requestPasswordReset,
   type OrganiserMember,
 } from './lib/api';
 import { Turnstile } from './lib/turnstile';
@@ -164,6 +166,77 @@ export function SignInPage() {
 }
 
 /**
+ * /reset — public, email-free password reset, keyed by username. A SIGNED-OUT
+ * member sets their OWN new password here. It only works while the Organiser has
+ * opened a reset window (the API enforces the 5-minute gate); outside a window
+ * the API refuses and we show the "ask the Organiser" message it returns. No
+ * email link is ever sent, and the Organiser never sees or sets the password.
+ */
+export function ResetPage() {
+  const navigate = useNavigate();
+  const [username, setUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const reset = useMutation({ mutationFn: requestPasswordReset });
+  const result = reset.data;
+
+  function onSubmit(event: FormEvent) {
+    event.preventDefault();
+    reset.mutate({ username: username.trim(), newPassword });
+  }
+
+  if (result?.ok) {
+    return (
+      <section>
+        <h1>Password updated</h1>
+        <p>Your new password is set. You can sign in with it now.</p>
+        <button type="button" onClick={() => void navigate({ to: '/signin' })}>
+          Go to sign in
+        </button>
+      </section>
+    );
+  }
+
+  return (
+    <section>
+      <h1>Reset your password</h1>
+      <p>
+        Ask the Organiser to allow a reset for you. Then, within 5 minutes, set a new password
+        below.
+      </p>
+      <form className="stack" onSubmit={onSubmit}>
+        <label>
+          Username
+          <input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username"
+            required
+          />
+        </label>
+        <label>
+          New password
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            autoComplete="new-password"
+            required
+          />
+        </label>
+        {result && !result.ok && (
+          <div className="form-error" role="alert">
+            <p>{result.message ?? 'Could not reset your password. Please try again.'}</p>
+          </div>
+        )}
+        <button type="submit" disabled={reset.isPending}>
+          {reset.isPending ? 'Saving…' : 'Set new password'}
+        </button>
+      </form>
+    </section>
+  );
+}
+
+/**
  * / — the gated dashboard. Reachable only with a session (the route guard
  * redirects to /signin otherwise). Lessons + the AI coach land here in later
  * slices.
@@ -193,6 +266,13 @@ function memberLabel(member: OrganiserMember): string {
   return member.displayUsername ?? member.username ?? member.displayName;
 }
 
+/** Is a reset window currently open for this member (a future closing instant)? */
+function resetWindowOpen(member: OrganiserMember): boolean {
+  return (
+    member.resetAllowedUntil !== null && new Date(member.resetAllowedUntil).getTime() > Date.now()
+  );
+}
+
 /**
  * /organiser — the Organiser area. Lists the pending queue and the active
  * members, with admit/reject controls. The route's beforeLoad redirects any
@@ -210,7 +290,8 @@ export function OrganiserPage() {
   const refresh = () => queryClient.invalidateQueries({ queryKey: ORGANISER_MEMBERS_QUERY_KEY });
   const admit = useMutation({ mutationFn: admitMember, onSuccess: refresh });
   const reject = useMutation({ mutationFn: rejectMember, onSuccess: refresh });
-  const busy = admit.isPending || reject.isPending;
+  const allowReset = useMutation({ mutationFn: allowMemberReset, onSuccess: refresh });
+  const busy = admit.isPending || reject.isPending || allowReset.isPending;
 
   if (membersQuery.isPending) {
     return (
@@ -241,12 +322,15 @@ export function OrganiserPage() {
   const members = membersQuery.data;
   const pending = members.filter((m) => m.status === 'pending');
   const active = members.filter((m) => m.status === 'active');
-  const actionError = admit.error ?? reject.error;
+  const actionError = admit.error ?? reject.error ?? allowReset.error;
 
   return (
     <section className="organiser">
       <h1>Organiser</h1>
-      <p>Admit people who have requested to join, or reject a request to free the username.</p>
+      <p>
+        Admit people who have requested to join, reject a request to free the username, or allow a
+        member a 5-minute window to set a new password.
+      </p>
 
       {actionError && (
         <div className="form-error" role="alert">
@@ -292,11 +376,17 @@ export function OrganiserPage() {
               <span className="member-name">
                 <strong>{memberLabel(member)}</strong>
                 {member.isOrganiser && <span className="badge">Organiser</span>}
+                {resetWindowOpen(member) && <span className="badge">Reset window open</span>}
               </span>
               <div className="member-actions">
-                {member.isOrganiser ? (
-                  <span className="muted">—</span>
-                ) : (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => allowReset.mutate(member.userId)}
+                >
+                  Allow reset
+                </button>
+                {!member.isOrganiser && (
                   <button
                     type="button"
                     className="danger"

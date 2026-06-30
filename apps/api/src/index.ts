@@ -6,6 +6,7 @@ import { createDb, type DbOrTx } from './db/client';
 import { applyMigrations } from './db/migrate';
 import { loadEnv } from './env';
 import { joinCrew, type JoinInput } from './join';
+import { resetPassword, type ResetInput } from './reset';
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -42,6 +43,7 @@ async function main(): Promise<void> {
     trustedOrigins: env.trustedOrigins,
     joinCrew: (input: JoinInput) =>
       joinCrew({ db, makeAuth, organiserUsernames: env.organiserUsernames, turnstile }, input),
+    resetPassword: (input: ResetInput) => resetPassword({ db, makeAuth }, input),
   });
 
   serve({ fetch: app.fetch, port: env.port }, (info) => {
