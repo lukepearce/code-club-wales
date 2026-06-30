@@ -1,4 +1,5 @@
 import { serve } from '@hono/node-server';
+import { createTurnstileVerifier } from '@codeclub/shared';
 import { createApp } from './app';
 import { createAuth } from './auth';
 import { createDb, type DbOrTx } from './db/client';
@@ -28,12 +29,19 @@ async function main(): Promise<void> {
 
   const auth = makeAuth(db);
 
+  // Turnstile verifier bound to the real secret + the platform fetch. The join
+  // coordinator is the ONLY consumer (the join path is the only bot-gated path).
+  const turnstile = createTurnstileVerifier({
+    secret: env.turnstileSecret,
+    fetch: (url, init) => fetch(url, init),
+  });
+
   const app = createApp({
     auth,
     db,
     trustedOrigins: env.trustedOrigins,
     joinCrew: (input: JoinInput) =>
-      joinCrew({ db, makeAuth, organiserUsernames: env.organiserUsernames }, input),
+      joinCrew({ db, makeAuth, organiserUsernames: env.organiserUsernames, turnstile }, input),
   });
 
   serve({ fetch: app.fetch, port: env.port }, (info) => {

@@ -7,6 +7,8 @@ export interface JoinRequest {
   username: string;
   password: string;
   email?: string | undefined;
+  /** Cloudflare Turnstile token from the join widget; the API verifies it. */
+  turnstileToken: string;
 }
 
 export type JoinResponse =

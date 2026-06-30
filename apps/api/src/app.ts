@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { type Context, Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { z } from 'zod';
 import type { Auth } from './auth';
@@ -20,7 +20,25 @@ const JoinBody = z.object({
   username: z.string(),
   password: z.string(),
   email: z.string().optional(),
+  // The Turnstile widget's token. Optional at the schema level so a missing
+  // token reaches the coordinator's bot gate (which rejects it) rather than
+  // failing as a generic bad request — keeping ALL Turnstile policy in one place.
+  turnstileToken: z.string().optional(),
 });
+
+/**
+ * Best-effort client IP for Cloudflare's optional `remoteip`. Prefer
+ * `cf-connecting-ip` (set by Cloudflare), else the first hop of
+ * `x-forwarded-for`. Absent in local/test requests — the verifier omits
+ * remoteip when this is undefined.
+ */
+function clientIp(c: Context): string | undefined {
+  const cf = c.req.header('cf-connecting-ip');
+  if (cf) return cf;
+  const forwarded = c.req.header('x-forwarded-for');
+  const first = forwarded?.split(',')[0]?.trim();
+  return first || undefined;
+}
 
 /**
  * Build the Hono app: CORS for the SPA, a health probe, the public join
@@ -59,11 +77,27 @@ export function createApp(config: AppConfig) {
       );
     }
 
-    const result = await config.joinCrew(parsed.data);
+    const result = await config.joinCrew({
+      username: parsed.data.username,
+      password: parsed.data.password,
+      email: parsed.data.email,
+      // A missing token becomes '' so the coordinator's bot gate rejects it.
+      turnstileToken: parsed.data.turnstileToken ?? '',
+      ip: clientIp(c),
+    });
     if (result.ok) {
       return c.json({ ok: true, username: result.username }, 201);
     }
     switch (result.error) {
+      case 'turnstile_failed':
+        return c.json(
+          {
+            ok: false,
+            error: result.error,
+            message: 'Bot check failed. Please complete the challenge and try again.',
+          },
+          403,
+        );
       case 'invalid_username':
         return c.json({ ok: false, error: result.error, reasons: result.reasons }, 422);
       case 'weak_password':

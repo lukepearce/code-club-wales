@@ -60,6 +60,11 @@ body {
   cursor: pointer;
 }
 
+/* Reserve space for the Turnstile widget so the form doesn't jump on load. */
+.turnstile {
+  min-height: 65px;
+}
+
 .form-error {
   color: #b00020;
   background: #fde7ea;

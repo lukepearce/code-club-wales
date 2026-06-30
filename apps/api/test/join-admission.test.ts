@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { PENDING_ADMISSION_MESSAGE } from '../src/auth';
 import { crewMember, session as sessionTable, user as userTable } from '../src/db/schema';
-import { setupTestApp, type TestHarness } from './harness';
+import { setupTestApp, type TestHarness, TURNSTILE_VALID_TOKEN } from './harness';
 
 const PASSWORD = 'correct-horse-battery';
 
@@ -18,10 +18,12 @@ afterAll(async () => {
 });
 
 function postJoin(body: Record<string, unknown>): Promise<Response> {
+  // The join path is Turnstile-gated; supply a valid token by default (a test
+  // can override by putting its own turnstileToken in `body`).
   return h.request('/api/join', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ turnstileToken: TURNSTILE_VALID_TOKEN, ...body }),
   });
 }
 

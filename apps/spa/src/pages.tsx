@@ -11,6 +11,7 @@ import {
   requestJoin,
   type OrganiserMember,
 } from './lib/api';
+import { Turnstile } from './lib/turnstile';
 
 /**
  * /join — request a Crew account. Username + password (+ optional email). The
@@ -21,12 +22,14 @@ export function JoinPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
+  // The Turnstile widget fills this in once the visitor passes the bot check.
+  const [turnstileToken, setTurnstileToken] = useState('');
   const join = useMutation({ mutationFn: requestJoin });
   const result = join.data;
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
-    join.mutate({ username, password, email: email.trim() || undefined });
+    join.mutate({ username, password, email: email.trim() || undefined, turnstileToken });
   }
 
   if (result?.ok) {
@@ -75,6 +78,9 @@ export function JoinPage() {
           />
         </label>
 
+        {/* Bot check. Must be solved before the request can be sent. */}
+        <Turnstile onToken={setTurnstileToken} onError={() => setTurnstileToken('')} />
+
         {result && !result.ok && (
           <div className="form-error" role="alert">
             {result.reasons && result.reasons.length > 0 ? (
@@ -89,7 +95,7 @@ export function JoinPage() {
           </div>
         )}
 
-        <button type="submit" disabled={join.isPending}>
+        <button type="submit" disabled={join.isPending || turnstileToken === ''}>
           {join.isPending ? 'Sending…' : 'Request account'}
         </button>
       </form>
@@ -201,8 +207,7 @@ export function OrganiserPage() {
     retry: false,
   });
 
-  const refresh = () =>
-    queryClient.invalidateQueries({ queryKey: ORGANISER_MEMBERS_QUERY_KEY });
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ORGANISER_MEMBERS_QUERY_KEY });
   const admit = useMutation({ mutationFn: admitMember, onSuccess: refresh });
   const reject = useMutation({ mutationFn: rejectMember, onSuccess: refresh });
   const busy = admit.isPending || reject.isPending;

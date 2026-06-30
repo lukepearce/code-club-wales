@@ -1,4 +1,9 @@
-import { bootstrap, forUsername, validate as validateUsername } from '@codeclub/shared';
+import {
+  bootstrap,
+  forUsername,
+  type TurnstileVerifier,
+  validate as validateUsername,
+} from '@codeclub/shared';
 import { APIError } from 'better-auth/api';
 import { eq } from 'drizzle-orm';
 import type { Auth } from './auth';
@@ -29,10 +34,15 @@ export interface JoinInput {
   password: string;
   /** Optional real email; when absent a synthetic placeholder is derived. */
   email?: string | undefined;
+  /** Cloudflare Turnstile token from the join widget. Verified server-side. */
+  turnstileToken: string;
+  /** Client IP, forwarded to Cloudflare as `remoteip` when present. Optional. */
+  ip?: string | undefined;
 }
 
 export type JoinResult =
   | { ok: true; userId: string; username: string }
+  | { ok: false; error: 'turnstile_failed' }
   | { ok: false; error: 'invalid_username'; reasons: string[] }
   | { ok: false; error: 'username_taken' }
   | { ok: false; error: 'email_taken' }
@@ -51,6 +61,14 @@ export interface JoinDeps {
    * the same transaction as the rest of the join.
    */
   organiserUsernames: readonly string[];
+  /**
+   * Cloudflare Turnstile verifier (the shared `createTurnstileVerifier`). The
+   * join path is the ONLY place a token is checked; injecting it keeps the
+   * network seam stubbable in tests. A missing/blank token, a Cloudflare
+   * `success:false`, or a network error all reject the join fail-closed BEFORE
+   * any account is created.
+   */
+  turnstile: TurnstileVerifier;
 }
 
 /** Internal control-flow signal: abort the transaction with a typed result. */
@@ -62,6 +80,20 @@ class JoinAbort extends Error {
 }
 
 export async function joinCrew(deps: JoinDeps, input: JoinInput): Promise<JoinResult> {
+  // 0. Bot gate (JOIN path only). A blank token is rejected outright; a present
+  //    token is verified server-side against Cloudflare via the injected
+  //    verifier. Either failure — including a network error, which the verifier
+  //    surfaces as ok:false — rejects the join BEFORE any account is created, so
+  //    a bot never reaches signUp. This is the only place Turnstile is consulted.
+  const token = input.turnstileToken.trim();
+  if (token === '') {
+    return { ok: false, error: 'turnstile_failed' };
+  }
+  const turnstile = await deps.turnstile.verify(token, input.ip);
+  if (!turnstile.ok) {
+    return { ok: false, error: 'turnstile_failed' };
+  }
+
   // 1. Canonical identity. The shared policy is the single validator.
   const validation = validateUsername(input.username);
   if (!validation.ok) {

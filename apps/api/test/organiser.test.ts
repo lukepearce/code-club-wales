@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { crewMember, user as userTable } from '../src/db/schema';
-import { setupTestApp, type TestHarness } from './harness';
+import { setupTestApp, type TestHarness, TURNSTILE_VALID_TOKEN } from './harness';
 
 // The club's Organiser is bootstrapped from this list. A join with this exact
 // username is auto-flagged + auto-admitted; everyone else joins PENDING.
@@ -22,10 +22,12 @@ afterAll(async () => {
 });
 
 function postJoin(body: Record<string, unknown>): Promise<Response> {
+  // The join path is Turnstile-gated; supply a valid token by default (a test
+  // can override by putting its own turnstileToken in `body`).
   return h.request('/api/join', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ turnstileToken: TURNSTILE_VALID_TOKEN, ...body }),
   });
 }
 

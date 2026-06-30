@@ -1,4 +1,5 @@
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { createTurnstileVerifier, type TurnstileFetch } from '@codeclub/shared';
 import { eq } from 'drizzle-orm';
 import { createApp, type App } from '../src/app';
 import { createAuth, type Auth } from '../src/auth';
@@ -11,6 +12,32 @@ import { joinCrew, type JoinInput, type JoinResult } from '../src/join';
 const POSTGRES_IMAGE = 'postgres:16';
 
 const TEST_TRUSTED_ORIGINS = ['http://localhost:5173'];
+
+/**
+ * The one token the default stubbed Turnstile fetch treats as valid. Tests that
+ * exercise the happy path send this; any other (or absent) token is rejected,
+ * so an integration test gets deterministic accept/reject without touching the
+ * real Cloudflare endpoint. Import it from join tests.
+ */
+export const TURNSTILE_VALID_TOKEN = 'test-turnstile-ok-token';
+
+/**
+ * Default stub for the verifier's injected fetch: report `success:true` only
+ * when the form body carries exactly `response=<TURNSTILE_VALID_TOKEN>`, else
+ * `success:false`. Exact pair match (not substring) so look-alike tokens fail.
+ * A test can pass its own `turnstileFetch` (e.g. one that rejects) to exercise
+ * the failure / network-error seams.
+ */
+const defaultTurnstileFetch: TurnstileFetch = (_url, init) => {
+  const pairs = (init?.body ?? '').split('&');
+  const ok = pairs.includes(`response=${TURNSTILE_VALID_TOKEN}`);
+  return Promise.resolve({
+    json: () =>
+      Promise.resolve(
+        ok ? { success: true } : { success: false, 'error-codes': ['invalid-input-response'] },
+      ),
+  });
+};
 
 export interface TestHarness {
   /** Drizzle db bound to the ephemeral container (full schema). */
@@ -43,6 +70,12 @@ export interface TestHarnessOptions {
    * empty, so by default no join becomes an Organiser.
    */
   organiserUsernames?: readonly string[];
+  /**
+   * Stub for the Turnstile verifier's injected fetch. Defaults to one that
+   * accepts only `TURNSTILE_VALID_TOKEN`. Override to exercise the failure or
+   * network-error seams (e.g. a fetch that rejects → join fails closed).
+   */
+  turnstileFetch?: TurnstileFetch;
 }
 
 /**
@@ -76,8 +109,15 @@ export async function setupTestApp(options: TestHarnessOptions = {}): Promise<Te
 
   const auth = makeAuth(db);
 
+  // Real verifier, stubbed network seam — so integration tests cover the actual
+  // createTurnstileVerifier wiring, not a hand-rolled fake.
+  const turnstile = createTurnstileVerifier({
+    secret: 'test-turnstile-secret',
+    fetch: options.turnstileFetch ?? defaultTurnstileFetch,
+  });
+
   const join = (input: JoinInput): Promise<JoinResult> =>
-    joinCrew({ db, makeAuth, organiserUsernames }, input);
+    joinCrew({ db, makeAuth, organiserUsernames, turnstile }, input);
 
   const app = createApp({ auth, db, trustedOrigins: TEST_TRUSTED_ORIGINS, joinCrew: join });
 

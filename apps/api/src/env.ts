@@ -20,6 +20,11 @@ const RawEnv = z.object({
   // Comma-separated usernames bootstrapped as Organisers at join (auto-flagged
   // is_organiser and auto-admitted). Consumed by the join coordinator.
   ORGANISER_USERNAMES: z.string().default(''),
+  // Cloudflare Turnstile secret key — used server-side to verify the join
+  // widget's token (the JOIN path only). Defaults to Cloudflare's DOCUMENTED
+  // dev TEST secret (always passes), so local dev + tests work end to end with
+  // the matching test site key. HUMAN HANDOFF: set the real secret in prod.
+  TURNSTILE_SECRET: z.string().min(1).default('1x0000000000000000000000000000000AA'),
 });
 
 export interface AppEnv {
@@ -31,6 +36,7 @@ export interface AppEnv {
   cookieDomain?: string;
   google: { clientId: string; clientSecret: string };
   organiserUsernames: string[];
+  turnstileSecret: string;
 }
 
 const splitList = (value: string): string[] =>
@@ -50,5 +56,6 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
     cookieDomain: parsed.COOKIE_DOMAIN || undefined,
     google: { clientId: parsed.GOOGLE_CLIENT_ID, clientSecret: parsed.GOOGLE_CLIENT_SECRET },
     organiserUsernames: splitList(parsed.ORGANISER_USERNAMES),
+    turnstileSecret: parsed.TURNSTILE_SECRET,
   };
 }
