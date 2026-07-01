@@ -1,7 +1,29 @@
-.vercel
-.DS_Store
-node_modules
+# dependencies
+node_modules/
+
+# build output
+dist/
+build/
+*.tsbuildinfo
+
+# turborepo
+.turbo/
+
+# test / coverage
+coverage/
+
+# env files
 .env
-.env.local
-.env*.local
+.env.*
+!.env.example
+
+# editor / os
+.DS_Store
+.idea/
+.vscode/
+
+# vercel
+.vercel
+
+# claude
 .claude

@@ -1,0 +1,17 @@
+{
+  "name": "@codeclub/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "auth:migrate": "better-auth migrate --config lib/auth.js -y",
+    "auth:generate": "better-auth generate --config lib/auth.js -y"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "better-auth": "^1.2.9",
+    "resend": "^4.5.1"
+  },
+  "devDependencies": {
+    "@better-auth/cli": "^1.2.9"
+  }
+}

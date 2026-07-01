@@ -1,17 +1,27 @@
 {
   "name": "code-club-wales",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "auth:migrate": "better-auth migrate --config lib/auth.js -y",
-    "auth:generate": "better-auth generate --config lib/auth.js -y"
+  "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": ">=22"
   },
-  "dependencies": {
-    "@neondatabase/serverless": "^0.10.4",
-    "better-auth": "^1.2.9",
-    "resend": "^4.5.1"
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "@better-auth/cli": "^1.2.9"
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.6.0",
+    "prettier": "^3.9.4",
+    "turbo": "^2.10.2",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.62.1"
   }
 }
