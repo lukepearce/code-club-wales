@@ -67,6 +67,23 @@ export function createAuth(config: AuthConfig) {
         clientSecret: config.google?.clientSecret ?? '',
       },
     },
+    // Account linking (slice 6). A SIGNED-IN member may link Google to their
+    // existing account (authClient.linkSocial), after which either password or
+    // Google reaches the same crew_member. Manual linking (account.mjs) refuses
+    // unless the provider is trusted OR the member's email is verified — v1
+    // members are unverified, so google MUST be trusted here. And because a
+    // member's email (a synthetic placeholder or a self-set contact address)
+    // rarely matches their Google email, allowDifferentEmails must be true;
+    // this is safe as the member is authenticated and explicitly linking their
+    // own account. This governs MANUAL linking only; the stranger "Sign in with
+    // Google" join (slice 5) is unaffected.
+    account: {
+      accountLinking: {
+        enabled: true,
+        trustedProviders: [GOOGLE_PROVIDER_ID],
+        allowDifferentEmails: true,
+      },
+    },
     plugins: [
       username({
         minUsernameLength: MIN_USERNAME_LENGTH,

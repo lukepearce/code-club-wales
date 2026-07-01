@@ -15,6 +15,7 @@ import {
 import { authClient, type AuthClient } from './lib/auth-client';
 import { queryClient } from './lib/query';
 import {
+  AccountPage,
   DashboardPage,
   GoogleWelcomePage,
   JoinPage,
@@ -84,15 +85,6 @@ function RootLayout() {
   );
 }
 
-function Placeholder({ title, note }: { title: string; note: string }) {
-  return (
-    <section>
-      <h1>{title}</h1>
-      <p>{note}</p>
-    </section>
-  );
-}
-
 const rootRoute = createRootRouteWithContext<RouterContext>()({
   component: RootLayout,
 });
@@ -144,12 +136,7 @@ const accountRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/account',
   beforeLoad: requireSession,
-  component: () => (
-    <Placeholder
-      title="Account"
-      note="Set email, link Google, claim a personal-site slug. Later slice."
-    />
-  ),
+  component: AccountPage,
 });
 
 const routeTree = rootRoute.addChildren([

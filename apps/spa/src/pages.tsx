@@ -1,7 +1,8 @@
+import { isSynthetic } from '@codeclub/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { type FormEvent, useState } from 'react';
-import { authClient, signInWithGoogle } from './lib/auth-client';
+import { authClient, linkGoogle, signInWithGoogle } from './lib/auth-client';
 import {
   admitMember,
   allowMemberReset,
@@ -12,6 +13,7 @@ import {
   rejectMember,
   requestJoin,
   requestPasswordReset,
+  setAccountEmail,
   type OrganiserMember,
 } from './lib/api';
 import { Turnstile } from './lib/turnstile';
@@ -393,6 +395,105 @@ export function DashboardPage() {
       <p>You are admitted and signed in. Lessons and the AI coach will appear here.</p>
       <button type="button" onClick={onSignOut}>
         Sign out
+      </button>
+    </section>
+  );
+}
+
+/**
+ * /account — signed-in account settings. Two self-service actions:
+ *  1. Set/replace the contact email (NO verification). A username-only join gets
+ *     a synthetic placeholder email; this page flags it as a placeholder and
+ *     lets the member save a real address. Sign-in is by username, so the email
+ *     is purely contact metadata.
+ *  2. Link Google to this account. After linking, the member can sign in with
+ *     EITHER their password or Google and reach this same account. (Distinct
+ *     from the sign-in/join Google button, which starts a NEW pending join.)
+ */
+export function AccountPage() {
+  const { data, refetch } = authClient.useSession();
+  const currentEmail = data?.user.email ?? '';
+  const usingPlaceholder = currentEmail !== '' && isSynthetic(currentEmail);
+
+  const [email, setEmail] = useState('');
+  const saveEmail = useMutation({
+    mutationFn: setAccountEmail,
+    onSuccess: async (res) => {
+      if (res.ok) {
+        setEmail('');
+        // Refresh the session so the displayed "current email" updates.
+        await refetch();
+      }
+    },
+  });
+  const emailResult = saveEmail.data;
+
+  const [linkPending, setLinkPending] = useState(false);
+  async function onLinkGoogle() {
+    setLinkPending(true);
+    try {
+      await linkGoogle();
+    } catch {
+      // linkSocial redirects the browser; reaching here means it could not
+      // start. Re-enable so the member can retry.
+      setLinkPending(false);
+    }
+  }
+
+  function onSubmitEmail(event: FormEvent) {
+    event.preventDefault();
+    saveEmail.mutate({ email: email.trim() });
+  }
+
+  return (
+    <section>
+      <h1>Account settings</h1>
+
+      <h2>Email</h2>
+      <p>
+        Your email is optional contact info. You sign in with your username — we never send email
+        or ask you to verify an address.
+      </p>
+      <p>
+        Current email: <strong>{currentEmail || 'none'}</strong>{' '}
+        {usingPlaceholder && (
+          <span className="muted">(a placeholder — set a real one below)</span>
+        )}
+      </p>
+      <form className="stack" onSubmit={onSubmitEmail}>
+        <label>
+          New email
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            required
+          />
+        </label>
+        {emailResult && !emailResult.ok && (
+          <div className="form-error" role="alert">
+            <p>{emailResult.message ?? 'Could not save your email. Please try again.'}</p>
+          </div>
+        )}
+        {emailResult?.ok && <p className="auth-note">Saved. Your email is now {emailResult.email}.</p>}
+        <button type="submit" disabled={saveEmail.isPending}>
+          {saveEmail.isPending ? 'Saving…' : 'Save email'}
+        </button>
+      </form>
+
+      <h2>Sign-in methods</h2>
+      <p>
+        Link Google to sign in with one click. Your username and password keep working too — both
+        reach this same account.
+      </p>
+      <button
+        type="button"
+        className="google-button"
+        onClick={onLinkGoogle}
+        disabled={linkPending}
+      >
+        {linkPending ? 'Redirecting…' : 'Link Google'}
       </button>
     </section>
   );

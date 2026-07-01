@@ -94,6 +94,35 @@ export async function completeGoogleUsername(
 }
 
 // ---------------------------------------------------------------------------
+// Account settings — set/replace the contact email (auth-gated; no verification
+// step). The server takes the user id from the session, so this only ever
+// changes the signed-in member's own email.
+// ---------------------------------------------------------------------------
+
+export interface SetEmailRequest {
+  email: string;
+}
+
+export type SetEmailResponse =
+  | { ok: true; email: string }
+  | { ok: false; error: string; message?: string };
+
+/** POST /api/account/email. Resolves to the parsed body (never throws on status). */
+export async function setAccountEmail(input: SetEmailRequest): Promise<SetEmailResponse> {
+  try {
+    const res = await fetch(`${API_URL}/api/account/email`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+    return (await res.json()) as SetEmailResponse;
+  } catch {
+    return { ok: false, error: 'network', message: 'Could not reach the server. Try again.' };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Organiser surface (gated server-side: the API answers 403 to non-Organisers).
 // ---------------------------------------------------------------------------
 

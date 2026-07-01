@@ -1,6 +1,7 @@
 import { type Context, Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { z } from 'zod';
+import type { SetEmailInput, SetEmailResult } from './account';
 import type { Auth } from './auth';
 import type { Database } from './db/client';
 import type { CompleteGoogleJoinInput, CompleteGoogleJoinResult } from './google';
@@ -20,6 +21,8 @@ export interface AppConfig {
   resetPassword: (input: ResetInput) => Promise<ResetResult>;
   /** The Google pick-a-username completion coordinator, bound by the caller. */
   completeGoogleJoin: (input: CompleteGoogleJoinInput) => Promise<CompleteGoogleJoinResult>;
+  /** The signed-in "set my email" coordinator, bound to the db + auth by the caller. */
+  setEmail: (input: SetEmailInput) => Promise<SetEmailResult>;
 }
 
 const JoinBody = z.object({
@@ -40,6 +43,12 @@ const ResetBody = z.object({
 const GoogleCompleteBody = z.object({
   userId: z.string(),
   username: z.string(),
+});
+
+const EmailBody = z.object({
+  // Structure only: the coordinator owns the semantic email policy (shape,
+  // synthetic-domain rejection, uniqueness), keeping it in one place.
+  email: z.string(),
 });
 
 /**
@@ -230,6 +239,46 @@ export function createApp(config: AppConfig) {
           },
           403,
         );
+      default:
+        return c.json({ ok: false, error: 'unknown', message: result.message }, 500);
+    }
+  });
+
+  // Signed-in account settings: set/replace the contact email with NO
+  // verification. Auth-gated — the SESSION's user id is the only id trusted, so
+  // a member can only change their own email (never another's). Linking Google
+  // is handled natively by Better Auth at /api/auth/link-social (see the SPA's
+  // linkGoogle), so email is the only custom account-settings route.
+  app.post('/api/account/email', async (c) => {
+    const authed = await config.auth.api.getSession({ headers: c.req.raw.headers });
+    const userId = authed?.user.id;
+    if (!userId) {
+      return c.json(
+        { ok: false, error: 'unauthenticated', message: 'Sign in to change your email.' },
+        401,
+      );
+    }
+
+    let raw: unknown;
+    try {
+      raw = await c.req.json();
+    } catch {
+      return c.json({ ok: false, error: 'bad_request', message: 'Invalid JSON.' }, 400);
+    }
+    const parsed = EmailBody.safeParse(raw);
+    if (!parsed.success) {
+      return c.json({ ok: false, error: 'bad_request', message: 'email is required.' }, 400);
+    }
+
+    const result = await config.setEmail({ userId, email: parsed.data.email });
+    if (result.ok) {
+      return c.json({ ok: true, email: result.email }, 200);
+    }
+    switch (result.error) {
+      case 'invalid_email':
+        return c.json({ ok: false, error: result.error, message: result.message }, 422);
+      case 'email_taken':
+        return c.json({ ok: false, error: result.error, message: result.message }, 409);
       default:
         return c.json({ ok: false, error: 'unknown', message: result.message }, 500);
     }

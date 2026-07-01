@@ -1,5 +1,6 @@
 import { serve } from '@hono/node-server';
 import { createTurnstileVerifier } from '@codeclub/shared';
+import { setEmail, type SetEmailInput } from './account';
 import { createApp } from './app';
 import { createAuth } from './auth';
 import { createDb, type DbOrTx } from './db/client';
@@ -47,6 +48,7 @@ async function main(): Promise<void> {
     resetPassword: (input: ResetInput) => resetPassword({ db, makeAuth }, input),
     completeGoogleJoin: (input: CompleteGoogleJoinInput) =>
       completeGoogleJoin({ db, organiserUsernames: env.organiserUsernames }, input),
+    setEmail: (input: SetEmailInput) => setEmail({ db, auth }, input),
   });
 
   serve({ fetch: app.fetch, port: env.port }, (info) => {

@@ -34,3 +34,19 @@ export function signInWithGoogle(): Promise<unknown> {
     errorCallbackURL: appUrl('/welcome'),
   });
 }
+
+/**
+ * Link Google to the CURRENT signed-in account (Better Auth manual account
+ * linking). Redirects to Google, then back to /account. After linking, the
+ * member can sign in with EITHER their password or Google and reach this same
+ * account. Requires an active session; the server enables linking (google is a
+ * trusted provider, different emails allowed) in createAuth. Unlike
+ * signInWithGoogle — a stranger's flow that starts a NEW pending join — this
+ * attaches Google to an account that already exists.
+ */
+export function linkGoogle(): Promise<unknown> {
+  return authClient.linkSocial({
+    provider: 'google',
+    callbackURL: appUrl('/account'),
+  });
+}

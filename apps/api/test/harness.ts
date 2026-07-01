@@ -1,6 +1,7 @@
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { createTurnstileVerifier, type TurnstileFetch } from '@codeclub/shared';
 import { eq } from 'drizzle-orm';
+import { setEmail, type SetEmailInput, type SetEmailResult } from '../src/account';
 import { createApp, type App } from '../src/app';
 import { createAuth, type Auth } from '../src/auth';
 import { createDb, type Database, type DbOrTx } from '../src/db/client';
@@ -60,6 +61,8 @@ export interface TestHarness {
   reset: (input: ResetInput) => Promise<ResetResult>;
   /** Call the Google completion coordinator directly (bypasses HTTP). */
   completeGoogleJoin: (input: CompleteGoogleJoinInput) => Promise<CompleteGoogleJoinResult>;
+  /** Call the "set my email" coordinator directly (bypasses HTTP). */
+  setEmail: (input: SetEmailInput) => Promise<SetEmailResult>;
   /** Grant Admission to a member by username (direct DB flip, for test setup). */
   admitByUsername: (username: string) => Promise<void>;
   /**
@@ -142,6 +145,8 @@ export async function setupTestApp(options: TestHarnessOptions = {}): Promise<Te
   const completeGoogle = (input: CompleteGoogleJoinInput): Promise<CompleteGoogleJoinResult> =>
     completeGoogleJoin({ db, organiserUsernames }, input);
 
+  const setEmailFn = (input: SetEmailInput): Promise<SetEmailResult> => setEmail({ db, auth }, input);
+
   const app = createApp({
     auth,
     db,
@@ -149,6 +154,7 @@ export async function setupTestApp(options: TestHarnessOptions = {}): Promise<Te
     joinCrew: join,
     resetPassword: reset,
     completeGoogleJoin: completeGoogle,
+    setEmail: setEmailFn,
   });
 
   const request = (input: string, init?: RequestInit): Promise<Response> =>
@@ -214,6 +220,7 @@ export async function setupTestApp(options: TestHarnessOptions = {}): Promise<Te
     join,
     reset,
     completeGoogleJoin: completeGoogle,
+    setEmail: setEmailFn,
     admitByUsername,
     setResetWindowByUsername,
     resetWindowByUsername,
