@@ -14,7 +14,14 @@ import {
 } from './lib/api';
 import { authClient, type AuthClient } from './lib/auth-client';
 import { queryClient } from './lib/query';
-import { DashboardPage, JoinPage, OrganiserPage, ResetPage, SignInPage } from './pages';
+import {
+  DashboardPage,
+  GoogleWelcomePage,
+  JoinPage,
+  OrganiserPage,
+  ResetPage,
+  SignInPage,
+} from './pages';
 
 export interface RouterContext {
   auth: AuthClient;
@@ -124,6 +131,15 @@ const resetRoute = createRoute({
   component: ResetPage,
 });
 
+// Public (no session guard): the Google pick-a-username completion step. The
+// person has no session yet (the Admission gate refused one); eligibility is
+// enforced server-side at /api/google/complete.
+const welcomeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/welcome',
+  component: GoogleWelcomePage,
+});
+
 const accountRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/account',
@@ -142,6 +158,7 @@ const routeTree = rootRoute.addChildren([
   joinRoute,
   organiserRoute,
   resetRoute,
+  welcomeRoute,
   accountRoute,
 ]);
 

@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { type FormEvent, useState } from 'react';
-import { authClient } from './lib/auth-client';
+import { authClient, signInWithGoogle } from './lib/auth-client';
 import {
   admitMember,
   allowMemberReset,
+  completeGoogleUsername,
   fetchOrganiserMembers,
   ORGANISER_MEMBERS_QUERY_KEY,
   OrganiserForbiddenError,
@@ -14,6 +15,31 @@ import {
   type OrganiserMember,
 } from './lib/api';
 import { Turnstile } from './lib/turnstile';
+
+/**
+ * "Continue with Google" — shared by the sign-in and join surfaces. One button
+ * for both: an admitted, Google-linked member is signed in in one step; an
+ * unknown identity is routed (via the API callback) to /welcome to pick a
+ * username and wait for Admission.
+ */
+function GoogleButton({ label }: { label: string }) {
+  const [pending, setPending] = useState(false);
+  async function onClick() {
+    setPending(true);
+    try {
+      await signInWithGoogle();
+    } catch {
+      // signIn.social redirects the browser; reaching here means it could not
+      // start. Re-enable so the visitor can retry.
+      setPending(false);
+    }
+  }
+  return (
+    <button type="button" className="google-button" onClick={onClick} disabled={pending}>
+      {pending ? 'Redirecting…' : label}
+    </button>
+  );
+}
 
 /**
  * /join — request a Crew account. Username + password (+ optional email). The
@@ -101,6 +127,12 @@ export function JoinPage() {
           {join.isPending ? 'Sending…' : 'Request account'}
         </button>
       </form>
+
+      <div className="auth-divider">or</div>
+      <GoogleButton label="Continue with Google" />
+      <p className="auth-note">
+        Joining with Google still needs the Organiser to admit you before you can sign in.
+      </p>
     </section>
   );
 }
@@ -159,6 +191,110 @@ export function SignInPage() {
         )}
         <button type="submit" disabled={pending}>
           {pending ? 'Signing in…' : 'Sign in'}
+        </button>
+      </form>
+
+      <div className="auth-divider">or</div>
+      <GoogleButton label="Sign in with Google" />
+    </section>
+  );
+}
+
+/**
+ * /welcome — the Google pick-a-username completion step. An unknown Google
+ * identity lands here (the API callback redirects after the Admission gate
+ * refuses a session): they are a PENDING crew_member with no username yet. They
+ * choose a username; the account stays pending until the Organiser admits them.
+ *
+ * The pending user's id arrives as `?uid=` on the redirect. The real Google
+ * OAuth client + the exact post-OAuth redirect carrying that id is a human
+ * handoff item; without it we explain that the Google sign-in must be retried.
+ */
+export function GoogleWelcomePage() {
+  const navigate = useNavigate();
+  const [params] = useState(() =>
+    typeof window === 'undefined'
+      ? new URLSearchParams()
+      : new URLSearchParams(window.location.search),
+  );
+  const userId = params.get('uid') ?? '';
+  const [username, setUsername] = useState('');
+  const complete = useMutation({
+    mutationFn: () => completeGoogleUsername({ userId, username }),
+  });
+  const result = complete.data;
+
+  if (result?.ok) {
+    return (
+      <section>
+        <h1>Almost there, {result.username}</h1>
+        {result.admitted ? (
+          <>
+            <p>Your account is ready. You can sign in with Google now.</p>
+            <button type="button" onClick={() => void navigate({ to: '/signin' })}>
+              Go to sign in
+            </button>
+          </>
+        ) : (
+          <p>
+            Your username is saved. Your request is now waiting for the Organiser to admit you.
+            Once admitted, sign in with Google in one click.
+          </p>
+        )}
+      </section>
+    );
+  }
+
+  if (!userId) {
+    return (
+      <section>
+        <h1>Finish signing in with Google</h1>
+        <p>
+          We could not link your Google sign-in. Please head back and try “Continue with Google”
+          again.
+        </p>
+        <button type="button" onClick={() => void navigate({ to: '/join' })}>
+          Back to join
+        </button>
+      </section>
+    );
+  }
+
+  return (
+    <section>
+      <h1>Pick a username</h1>
+      <p>Thanks for signing in with Google. Choose a username to finish requesting your account.</p>
+      <form
+        className="stack"
+        onSubmit={(event: FormEvent) => {
+          event.preventDefault();
+          complete.mutate();
+        }}
+      >
+        <label>
+          Username
+          <input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username"
+            required
+          />
+        </label>
+        {result && !result.ok && (
+          <div className="form-error" role="alert">
+            {result.reasons && result.reasons.length > 0 ? (
+              <ul>
+                {result.reasons.map((reason) => (
+                  <li key={reason}>{reason}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>{result.message ?? 'Could not save your username. Please try again.'}</p>
+            )}
+          </div>
+        )}
+        <button type="submit" disabled={complete.isPending}>
+          {complete.isPending ? 'Saving…' : 'Continue'}
         </button>
       </form>
     </section>

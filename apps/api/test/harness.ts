@@ -6,6 +6,11 @@ import { createAuth, type Auth } from '../src/auth';
 import { createDb, type Database, type DbOrTx } from '../src/db/client';
 import { crewMember, user as userTable } from '../src/db/schema';
 import { applyMigrations } from '../src/db/migrate';
+import {
+  completeGoogleJoin,
+  type CompleteGoogleJoinInput,
+  type CompleteGoogleJoinResult,
+} from '../src/google';
 import { joinCrew, type JoinInput, type JoinResult } from '../src/join';
 import { resetPassword, type ResetInput, type ResetResult } from '../src/reset';
 
@@ -53,6 +58,8 @@ export interface TestHarness {
   join: (input: JoinInput) => Promise<JoinResult>;
   /** Call the reset coordinator directly (bypasses HTTP) for unit-ish setup. */
   reset: (input: ResetInput) => Promise<ResetResult>;
+  /** Call the Google completion coordinator directly (bypasses HTTP). */
+  completeGoogleJoin: (input: CompleteGoogleJoinInput) => Promise<CompleteGoogleJoinResult>;
   /** Grant Admission to a member by username (direct DB flip, for test setup). */
   admitByUsername: (username: string) => Promise<void>;
   /**
@@ -132,12 +139,16 @@ export async function setupTestApp(options: TestHarnessOptions = {}): Promise<Te
 
   const reset = (input: ResetInput): Promise<ResetResult> => resetPassword({ db, makeAuth }, input);
 
+  const completeGoogle = (input: CompleteGoogleJoinInput): Promise<CompleteGoogleJoinResult> =>
+    completeGoogleJoin({ db, organiserUsernames }, input);
+
   const app = createApp({
     auth,
     db,
     trustedOrigins: TEST_TRUSTED_ORIGINS,
     joinCrew: join,
     resetPassword: reset,
+    completeGoogleJoin: completeGoogle,
   });
 
   const request = (input: string, init?: RequestInit): Promise<Response> =>
@@ -202,6 +213,7 @@ export async function setupTestApp(options: TestHarnessOptions = {}): Promise<Te
     request,
     join,
     reset,
+    completeGoogleJoin: completeGoogle,
     admitByUsername,
     setResetWindowByUsername,
     resetWindowByUsername,

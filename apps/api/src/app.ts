@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import { z } from 'zod';
 import type { Auth } from './auth';
 import type { Database } from './db/client';
+import type { CompleteGoogleJoinInput, CompleteGoogleJoinResult } from './google';
 import type { JoinInput, JoinResult } from './join';
 import { createOrganiserApp } from './organiser';
 import type { ResetInput, ResetResult } from './reset';
@@ -17,6 +18,8 @@ export interface AppConfig {
   joinCrew: (input: JoinInput) => Promise<JoinResult>;
   /** The password-reset coordinator, bound to the db + auth factory by the caller. */
   resetPassword: (input: ResetInput) => Promise<ResetResult>;
+  /** The Google pick-a-username completion coordinator, bound by the caller. */
+  completeGoogleJoin: (input: CompleteGoogleJoinInput) => Promise<CompleteGoogleJoinResult>;
 }
 
 const JoinBody = z.object({
@@ -32,6 +35,11 @@ const JoinBody = z.object({
 const ResetBody = z.object({
   username: z.string(),
   newPassword: z.string(),
+});
+
+const GoogleCompleteBody = z.object({
+  userId: z.string(),
+  username: z.string(),
 });
 
 /**
@@ -168,6 +176,60 @@ export function createApp(config: AppConfig) {
         );
       case 'weak_password':
         return c.json({ ok: false, error: result.error, message: result.message }, 422);
+      default:
+        return c.json({ ok: false, error: 'unknown', message: result.message }, 500);
+    }
+  });
+
+  // Public "complete a Google join" endpoint: the pick-a-username step for an
+  // unknown Google identity. After Google auth the person is a PENDING crew_member
+  // with no username (the account-create hook minted the row; the gate refused a
+  // session); here they claim a username and stay pending until Admission. Public
+  // because there is no session yet — eligibility (a Google account with no
+  // username) is the authorisation, enforced by the coordinator.
+  app.post('/api/google/complete', async (c) => {
+    let raw: unknown;
+    try {
+      raw = await c.req.json();
+    } catch {
+      return c.json({ ok: false, error: 'bad_request', message: 'Invalid JSON.' }, 400);
+    }
+    const parsed = GoogleCompleteBody.safeParse(raw);
+    if (!parsed.success) {
+      return c.json(
+        { ok: false, error: 'bad_request', message: 'userId and username are required.' },
+        400,
+      );
+    }
+
+    const result = await config.completeGoogleJoin({
+      userId: parsed.data.userId,
+      username: parsed.data.username,
+    });
+    if (result.ok) {
+      return c.json({ ok: true, username: result.username, admitted: result.admitted }, 200);
+    }
+    switch (result.error) {
+      case 'invalid_username':
+        return c.json({ ok: false, error: result.error, reasons: result.reasons }, 422);
+      case 'username_taken':
+        return c.json(
+          {
+            ok: false,
+            error: result.error,
+            message: 'That username is already taken. Please choose another.',
+          },
+          409,
+        );
+      case 'not_eligible':
+        return c.json(
+          {
+            ok: false,
+            error: result.error,
+            message: 'This Google sign-in cannot be completed.',
+          },
+          403,
+        );
       default:
         return c.json({ ok: false, error: 'unknown', message: result.message }, 500);
     }

@@ -5,6 +5,7 @@ import { createAuth } from './auth';
 import { createDb, type DbOrTx } from './db/client';
 import { applyMigrations } from './db/migrate';
 import { loadEnv } from './env';
+import { completeGoogleJoin, type CompleteGoogleJoinInput } from './google';
 import { joinCrew, type JoinInput } from './join';
 import { resetPassword, type ResetInput } from './reset';
 
@@ -44,6 +45,8 @@ async function main(): Promise<void> {
     joinCrew: (input: JoinInput) =>
       joinCrew({ db, makeAuth, organiserUsernames: env.organiserUsernames, turnstile }, input),
     resetPassword: (input: ResetInput) => resetPassword({ db, makeAuth }, input),
+    completeGoogleJoin: (input: CompleteGoogleJoinInput) =>
+      completeGoogleJoin({ db, organiserUsernames: env.organiserUsernames }, input),
   });
 
   serve({ fetch: app.fetch, port: env.port }, (info) => {

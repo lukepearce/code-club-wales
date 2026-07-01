@@ -58,6 +58,42 @@ export async function requestPasswordReset(input: ResetRequest): Promise<ResetRe
 }
 
 // ---------------------------------------------------------------------------
+// Google join — the pick-a-username completion step. After Google auth an
+// unknown identity is a PENDING crew_member with no username (and no session —
+// the Admission gate refused one). Here they claim a username and stay pending
+// until the Organiser admits them. Public: eligibility (a Google account with no
+// username) is the authorisation, enforced server-side.
+// ---------------------------------------------------------------------------
+
+export interface GoogleCompleteRequest {
+  /** The pending Google user's id (supplied by the post-OAuth redirect). */
+  userId: string;
+  /** The username the person is choosing. */
+  username: string;
+}
+
+export type GoogleCompleteResponse =
+  | { ok: true; username: string; admitted: boolean }
+  | { ok: false; error: string; reasons?: string[]; message?: string };
+
+/** POST /api/google/complete. Resolves to the parsed body (never throws on status). */
+export async function completeGoogleUsername(
+  input: GoogleCompleteRequest,
+): Promise<GoogleCompleteResponse> {
+  try {
+    const res = await fetch(`${API_URL}/api/google/complete`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+    return (await res.json()) as GoogleCompleteResponse;
+  } catch {
+    return { ok: false, error: 'network', message: 'Could not reach the server. Try again.' };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Organiser surface (gated server-side: the API answers 403 to non-Organisers).
 // ---------------------------------------------------------------------------
 

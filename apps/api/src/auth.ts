@@ -5,10 +5,20 @@ import { APIError } from 'better-auth/api';
 import { username } from 'better-auth/plugins';
 import { eq } from 'drizzle-orm';
 import { type DbOrTx, schema } from './db/client';
-import { crewMember } from './db/schema';
+import { crewMember, user as userTable } from './db/schema';
 
 /** Shown when a pending Crew member is refused a session at the Admission gate. */
 export const PENDING_ADMISSION_MESSAGE = 'You are waiting to be admitted by the Organiser.';
+
+/**
+ * Better Auth's provider id for a Google `account` row. A Google sign-in is the
+ * ONLY social path in v1, so this single id distinguishes a Google join from the
+ * email+password (`credential`) join in the account-create hook below.
+ */
+export const GOOGLE_PROVIDER_ID = 'google';
+
+/** Fallback display_name for a Google join whose profile carries no name. */
+const DEFAULT_DISPLAY_NAME = 'Crew member';
 
 /** Username length bounds — the canonical rule lives in usernamePolicy. */
 const MIN_USERNAME_LENGTH = 3;
@@ -69,6 +79,51 @@ export function createAuth(config: AuthConfig) {
       ? { crossSubDomainCookies: { enabled: true, domain: config.cookieDomain } }
       : undefined,
     databaseHooks: {
+      account: {
+        create: {
+          // Google-join seam. When Better Auth creates a Google `account` row
+          // for an UNKNOWN identity (first sign-in), there is no crew_member and
+          // — because the username plugin assigns no username on a social
+          // sign-up — no username yet. Mint a PENDING crew_member here (the same
+          // pending state a username+password join lands in), with display_name
+          // defaulted from the Google profile name. The person then completes the
+          // pick-a-username step (see completeGoogleJoin) and waits for Admission
+          // exactly like any other join.
+          //
+          // Fires for EVERY account create, so it is a no-op for anything but
+          // Google: the email+password join writes a 'credential' account (and
+          // its own crew_member in the join transaction), and a future Google
+          // LINK to an existing member (slice 6) already has a crew_member — the
+          // existence check below makes this idempotent for both.
+          //
+          // Timing: create.after runs once the createOAuthUser transaction has
+          // committed (queueAfterTransactionHook), so this write sees the
+          // committed user row and persists even though the very next step — the
+          // session.create.before gate — refuses a session to the pending member.
+          after: async (account) => {
+            if (account.providerId !== GOOGLE_PROVIDER_ID) return;
+            const existing = await config.db
+              .select({ id: crewMember.id })
+              .from(crewMember)
+              .where(eq(crewMember.user_id, account.userId))
+              .limit(1);
+            if (existing.length > 0) return;
+            const rows = await config.db
+              .select({ name: userTable.name })
+              .from(userTable)
+              .where(eq(userTable.id, account.userId))
+              .limit(1);
+            const displayName = rows[0]?.name?.trim() || DEFAULT_DISPLAY_NAME;
+            await config.db.insert(crewMember).values({
+              user_id: account.userId,
+              display_name: displayName,
+              is_organiser: false,
+              // PENDING: no Admission yet (cannot mint a session).
+              admitted_at: null,
+            });
+          },
+        },
+      },
       session: {
         create: {
           // The Admission gate. Runs before ANY session is minted. Load the
